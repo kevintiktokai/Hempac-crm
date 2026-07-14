@@ -1,102 +1,140 @@
+"use client";
+
 /**
- * Settings wireframe (handoff §4.7): users/roles, engine defaults, WhatsApp
- * MCP connection (read-only badge + last sync), data & consent.
+ * Settings (§4.7): users & roles, engine defaults, WhatsApp MCP connection
+ * (read-only badge + last sync), data & consent (followed list, un-follow,
+ * delete-school-data).
  */
-import { MessageCircle, ShieldCheck, Trash2, Users } from "lucide-react";
-import { Avatar, Card, CardTitle, Chip, GhostBtn, Note } from "@/components/wireframe/ui";
+import { MessageCircle, ShieldCheck, Trash2, Users, Settings as SettingsIcon } from "lucide-react";
+import { Card, CardTitle } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/crm/bits";
+import { PageState, EmptyState } from "@/components/crm/PageState";
+import { usePrototype } from "@/components/crm/store";
 import { SCHOOLS } from "@/lib/sampleData";
 
 const USERS = [
-  { name: "Emilia Chisango", role: "Owner", initials: "EC" },
-  { name: "Tino Chisango", role: "Sales", initials: "TC" },
+  { name: "Emilia Chisango", role: "Owner", initials: "EC", tone: "terra" as const },
+  { name: "Tino Chisango", role: "Sales", initials: "TC", tone: "green" as const },
 ];
 
 export default function SettingsPage() {
-  const followed = SCHOOLS.filter((s) => s.following);
+  const { following, toggleFollow } = usePrototype();
+  const followed = SCHOOLS.filter((s) => following[s.id]);
+
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-xl font-semibold text-wf-ink">Settings</h1>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardTitle><span className="flex items-center gap-2"><Users size={14} /> Users &amp; roles</span></CardTitle>
-          <ul className="divide-y divide-wf-line">
-            {USERS.map((u) => (
-              <li key={u.initials} className="flex items-center justify-between py-2.5">
-                <div className="flex items-center gap-2.5">
-                  <Avatar initials={u.initials} dark />
-                  <div>
-                    <div className="text-sm font-medium text-wf-ink">{u.name}</div>
-                    <div className="text-xs text-wf-mid">{u.role}</div>
+    <PageState
+      skeleton="table"
+      empty={
+        <EmptyState
+          icon={<SettingsIcon size={22} />}
+          headline="Nothing configured yet"
+          body="Invite your team, connect WhatsApp in read-only mode, and set the engine's defaults to get started."
+          action="Connect WhatsApp"
+        />
+      }
+    >
+      <div className="p-6">
+        <h1 className="mb-5 text-xl font-semibold text-ink">Settings</h1>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Card>
+            <CardTitle><span className="flex items-center gap-2"><Users size={14} /> Users &amp; roles</span></CardTitle>
+            <ul className="divide-y divide-line">
+              {USERS.map((u) => (
+                <li key={u.initials} className="flex items-center justify-between py-3">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar initials={u.initials} tone={u.tone} />
+                    <div>
+                      <div className="text-sm font-medium text-body">{u.name}</div>
+                      <div className="text-xs text-muted">{u.role}</div>
+                    </div>
                   </div>
+                  <Chip tone={u.role === "Owner" ? "green" : "neutral"}>
+                    {u.role === "Owner" ? "Full access" : "Sales access"}
+                  </Chip>
+                </li>
+              ))}
+            </ul>
+            <Button variant="ghost" className="mt-2">Invite user</Button>
+          </Card>
+
+          <Card>
+            <CardTitle>Engine defaults</CardTitle>
+            <div className="space-y-3.5 text-sm">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted">Segments</span>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {["Private", "Trust", "Mission"].map((s) => <Chip key={s} tone="green">{s}</Chip>)}
                 </div>
-                <Chip>{u.role === "Owner" ? "Full access" : "Sales access"}</Chip>
-              </li>
-            ))}
-          </ul>
-          <GhostBtn>Invite user</GhostBtn>
-        </Card>
-
-        <Card>
-          <CardTitle>Engine defaults</CardTitle>
-          <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-wf-mid">Segments</span>
-              <span className="text-xs text-wf-ink">Private · Trust · Mission</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-wf-mid">Regions</span>
-              <span className="text-xs text-wf-ink">Harare · Bulawayo · Mutare · Gweru</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-wf-mid">Throughput cap</span>
-              <span className="text-xs font-semibold tabular-nums text-wf-ink">10 drafts / day</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-wf-mid">Currency · phone format</span>
-              <span className="text-xs text-wf-ink">USD · +263</span>
-            </div>
-          </div>
-        </Card>
-
-        <Card>
-          <CardTitle right={<Note>Read-only badge</Note>}>
-            <span className="flex items-center gap-2"><MessageCircle size={14} /> WhatsApp connection</span>
-          </CardTitle>
-          <div className="flex items-center justify-between rounded-lg border border-wf-line px-3 py-2.5">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-medium text-wf-ink">
-                Connected · +263 77 ••• ••12
-                <span className="rounded-full bg-wf-fill px-2 py-0.5 text-[10px] font-semibold text-wf-mid">READ-ONLY</span>
               </div>
-              <div className="mt-0.5 text-xs text-wf-mid">Last sync 4 minutes ago · send, react &amp; typing disabled</div>
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-muted">Regions</span>
+                <span className="text-right text-xs text-body">Harare · Bulawayo · Mutare · Gweru</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Throughput cap</span>
+                <span className="text-xs font-semibold tabular-nums text-body">10 drafts / day</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted">Currency · phone format</span>
+                <span className="text-xs text-body">USD · +263</span>
+              </div>
             </div>
-            <span className="h-2.5 w-2.5 rounded-full bg-wf-dark" />
-          </div>
-          <p className="mt-3 text-[11px] leading-snug text-wf-faint">
-            The assistant reads followed conversations to suggest updates. It can never send a message from your number.
-          </p>
-        </Card>
+          </Card>
 
-        <Card>
-          <CardTitle><span className="flex items-center gap-2"><ShieldCheck size={14} /> Data &amp; consent</span></CardTitle>
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-wf-faint">
-            Followed conversations · {followed.length}
-          </div>
-          <ul className="divide-y divide-wf-line">
-            {followed.map((s) => (
-              <li key={s.id} className="flex items-center justify-between py-2">
-                <span className="text-sm text-wf-ink">{s.name}</span>
-                <div className="flex items-center gap-2">
-                  <button className="text-xs text-wf-mid underline">Unfollow</button>
-                  <button className="flex items-center gap-1 text-xs text-wf-faint underline">
-                    <Trash2 size={11} /> Delete data
-                  </button>
+          <Card>
+            <CardTitle>
+              <span className="flex items-center gap-2"><MessageCircle size={14} className="text-success" /> WhatsApp connection</span>
+            </CardTitle>
+            <div className="flex items-center justify-between rounded-xl border border-line px-4 py-3">
+              <div>
+                <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-body">
+                  Connected · +263 77 ••• ••12
+                  <span className="rounded-full bg-green-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green">
+                    read-only
+                  </span>
                 </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+                <div className="mt-0.5 text-xs text-muted">Last sync 4 minutes ago · send, react &amp; typing disabled</div>
+              </div>
+              <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-success" />
+            </div>
+            <p className="mt-3 text-[11px] leading-snug text-faint">
+              The assistant reads followed conversations to suggest updates. It can never send a message from your number.
+            </p>
+          </Card>
+
+          <Card>
+            <CardTitle right={<span className="text-xs tabular-nums text-muted">{followed.length} followed</span>}>
+              <span className="flex items-center gap-2"><ShieldCheck size={14} /> Data &amp; consent</span>
+            </CardTitle>
+            {followed.length > 0 ? (
+              <ul className="divide-y divide-line">
+                {followed.map((s) => (
+                  <li key={s.id} className="flex items-center justify-between py-2.5">
+                    <span className="text-sm text-body">{s.name}</span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => toggleFollow(s.id)}
+                        className="text-xs font-medium text-muted underline-offset-2 transition-colors hover:text-body hover:underline"
+                      >
+                        Unfollow
+                      </button>
+                      <button className="flex items-center gap-1 text-xs text-faint underline-offset-2 transition-colors hover:text-danger hover:underline">
+                        <Trash2 size={11} /> Delete data
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted">
+                No conversations are being followed. Turn on Follow from any school page.
+              </p>
+            )}
+          </Card>
+        </div>
       </div>
-    </div>
+    </PageState>
   );
 }

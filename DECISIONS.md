@@ -17,4 +17,17 @@ Behaviour authority: BUILD-SCOPE.md · Design authority: DESIGN-BUILD-HANDOFF.md
 | 8 | Drag-and-drop, ⌘K palette, and drawer keyboard shortcuts are annotated but not functional in lo-fi. | Interaction fidelity belongs to A2. |
 | 9 | Demo pricing "Offer" screen is kept as a sidebar entry (Variant A only, per the demo) but not built as a wireframe screen — it is not in §4's screen list. | §4 defines the 8 screens Phase A must cover. |
 
-## Phase A2 (hi-fi) — pending nav-variant choice
+## Phase A2 (hi-fi prototype)
+
+Kev's gate decisions: **nav Variant A (dark brand sidebar)**; A2 proceeds with BUILD-SCOPE.md to be added to the repo before Phase B.
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 10 | shadcn/ui adopted in its native form — components copied into `/components/ui` (button, chip, card, switch, popover, skeleton) on cva + radix primitives — rather than via the CLI. | Same idiom and file layout the CLI produces; zero config churn. |
+| 11 | Soft fills use Tailwind's opacity scale `/10`–`/15` (spec says 10–14%). | `/12`–`/14` are not valid Tailwind utilities and were silently dropped. |
+| 12 | Prototype state (accept/dismiss, kanban moves, follow, tasks) lives in a React context in client memory; it resets on hard reload. | §6 mandates purely client-side state; Convex replaces the store in Phase B behind the same component API. |
+| 13 | A floating "Preview: Normal / Loading / Empty / Error" pill (bottom-left) lets the reviewer see every screen's states without contriving them. Review-only; removed in Phase B. | §4 requires all three states to exist and be reviewable. |
+| 14 | "The Offer" sidebar button opens a popover ("engagement details shared separately") instead of a pricing screen. | The §4 screen list doesn't include it; an inert button would feel broken in a clickable prototype. |
+| 15 | Fraunces loaded via `next/font/google`, used only in empty-state headlines (no auth screen exists in §4). Geist Sans via the `geist` package. | §1.3's constraint on where the serif may appear. |
+| 16 | The Ask drawer's fourth quick prompt ("Draft a follow-up") shows the draft with the line "I draft — you send." | Reinforces the read-only WhatsApp invariant inside the chat surface. |
+| 17 | Won-column sample deals (Kingsmead, Sunridge) are static and not draggable; live deals move through the same store the suggestions mutate. | They exist only to make Won look alive, per the demo dataset. |
