@@ -12,12 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/crm/bits";
 import { PageState, EmptyState } from "@/components/crm/PageState";
 import { usePrototype } from "@/components/crm/store";
-import { SCHOOLS } from "@/lib/sampleData";
-
-const USERS = [
-  { name: "Emilia Chisango", role: "Owner", initials: "EC", tone: "terra" as const },
-  { name: "Tino Chisango", role: "Sales", initials: "TC", tone: "green" as const },
-];
+import { SCHOOLS, USERS } from "@/lib/sampleData";
 
 export default function SettingsPage() {
   const { following, toggleFollow } = usePrototype();
@@ -39,24 +34,28 @@ export default function SettingsPage() {
         <h1 className="mb-5 text-xl font-semibold text-ink">Settings</h1>
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
-            <CardTitle><span className="flex items-center gap-2"><Users size={14} /> Users &amp; roles</span></CardTitle>
+            <CardTitle right={<span className="text-xs tabular-nums text-muted">{USERS.length} of 10 seats</span>}>
+              <span className="flex items-center gap-2"><Users size={14} /> Users &amp; roles</span>
+            </CardTitle>
             <ul className="divide-y divide-line">
               {USERS.map((u) => (
-                <li key={u.initials} className="flex items-center justify-between py-3">
+                <li key={u.id} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-2.5">
-                    <Avatar initials={u.initials} tone={u.tone} />
+                    <Avatar initials={u.initials} tone={u.role === "admin" ? "terra" : "green"} />
                     <div>
                       <div className="text-sm font-medium text-body">{u.name}</div>
-                      <div className="text-xs text-muted">{u.role}</div>
+                      <div className="text-xs text-muted">{u.id === "u-ec" ? "Founder & CEO" : u.role === "admin" ? "Admin" : "Sales rep"}</div>
                     </div>
                   </div>
-                  <Chip tone={u.role === "Owner" ? "green" : "neutral"}>
-                    {u.role === "Owner" ? "Full access" : "Sales access"}
-                  </Chip>
+                  <Chip tone={u.role === "admin" ? "terra" : "neutral"}>{u.role}</Chip>
                 </li>
               ))}
             </ul>
-            <Button variant="ghost" className="mt-2">Invite user</Button>
+            <p className="mb-2 mt-1 text-[11px] leading-snug text-faint">
+              Everyone sees the same data — accountability comes from assignment and the audit trail, not from hiding rows.
+              Admins additionally manage users, settings and the engine.
+            </p>
+            <Button variant="ghost">Invite user</Button>
           </Card>
 
           <Card>

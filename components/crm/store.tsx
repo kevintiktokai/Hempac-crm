@@ -1,19 +1,16 @@
 "use client";
 
 /**
- * Client-side prototype state (Phase A — no backend, §6).
- * Holds everything the clickable prototype mutates: suggestion statuses,
- * task completion, deal stages, follow flags, and the activity feed.
+ * Client-side prototype state (Phase A — no backend, §6), extended for the
+ * v3 scope: deal-keyed stages across two pipelines, suggestion effects via
+ * explicit payloads, assignment-aware tasks, views, and the activity feed.
  * Convex replaces this in Phase B behind the same component API.
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import {
-  SCHOOLS, SUGGESTIONS, TASKS,
+  DEALS, SCHOOLS, SUGGESTIONS, TASKS, dealById, schoolById,
   type DealStage, type Suggestion, type Task,
 } from "@/lib/sampleData";
-
-/** Review-only preview of each screen's loading/empty/error states (§4). */
-export type PreviewState = "normal" | "loading" | "empty" | "error";
 
 export interface ActivityItem {
   id: string;
@@ -22,21 +19,29 @@ export interface ActivityItem {
   kind: "accepted" | "dismissed" | "moved" | "task";
 }
 
+/** Review-only preview of each screen's loading/empty/error states (§4). */
+export type PreviewState = "normal" | "loading" | "empty" | "error";
+
+/** §4 views: everything vs assigned-to-me. Pending tasks is a task-list filter. */
+export type ViewScope = "global" | "mine";
+
 interface PrototypeState {
   suggestions: Suggestion[];
   tasks: Task[];
-  stages: Record<number, DealStage | "">;
+  stages: Record<string, DealStage>;
   following: Record<number, boolean>;
   activity: ActivityItem[];
   askOpen: boolean;
   setAskOpen: (open: boolean) => void;
   preview: PreviewState;
   setPreview: (p: PreviewState) => void;
+  view: ViewScope;
+  setView: (v: ViewScope) => void;
   acceptSuggestion: (id: string) => void;
   dismissSuggestion: (id: string) => void;
   toggleTask: (id: string) => void;
   toggleFollow: (schoolId: number) => void;
-  moveDeal: (schoolId: number, stage: DealStage) => void;
+  moveDeal: (dealId: string, stage: DealStage) => void;
 }
 
 const Ctx = createContext<PrototypeState | null>(null);
@@ -53,8 +58,8 @@ const nextId = (): string => `act-${++seq}`;
 export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>(SUGGESTIONS);
   const [tasks, setTasks] = useState<Task[]>(TASKS);
-  const [stages, setStages] = useState<Record<number, DealStage | "">>(
-    Object.fromEntries(SCHOOLS.map((s) => [s.id, s.stage]))
+  const [stages, setStages] = useState<Record<string, DealStage>>(
+    Object.fromEntries(DEALS.map((d) => [d.id, d.stage]))
   );
   const [following, setFollowing] = useState<Record<number, boolean>>(
     Object.fromEntries(SCHOOLS.map((s) => [s.id, s.following]))
@@ -62,34 +67,45 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [askOpen, setAskOpen] = useState(false);
   const [preview, setPreview] = useState<PreviewState>("normal");
+  const [view, setView] = useState<ViewScope>("global");
 
   const log = useCallback((item: Omit<ActivityItem, "id">) => {
     setActivity((prev) => [{ ...item, id: nextId() }, ...prev]);
   }, []);
 
+  const moveDeal = useCallback((dealId: string, stage: DealStage) => {
+    setStages((st) => {
+      if (st[dealId] === stage) return st;
+      const deal = dealById(dealId);
+      const school = deal ? schoolById(deal.schoolId) : undefined;
+      log({ schoolId: deal?.schoolId ?? 0, text: `${school?.name ?? "Deal"} moved to ${stage}`, kind: "moved" });
+      return { ...st, [dealId]: stage };
+    });
+  }, [log]);
+
   const acceptSuggestion = useCallback((id: string) => {
     setSuggestions((prev) => {
       const s = prev.find((x) => x.id === id);
       if (!s || s.status !== "pending") return prev;
-      // Apply the accepted change to prototype state
-      if (s.type === "Stage change") {
-        const match = /to (New Enquiry|Demo Booked|Quote Sent|Procurement|Won|Lost)/.exec(s.proposal);
-        if (match) {
-          const stage = match[1] as DealStage;
-          setStages((st) => ({ ...st, [s.schoolId]: stage }));
-        }
+      if (s.type === "Stage change" && s.dealId && s.toStage) {
+        moveDeal(s.dealId, s.toStage);
       } else if (s.type === "Task done") {
         setTasks((ts) => ts.map((t) => (t.schoolId === s.schoolId && !t.done ? { ...t, done: true, due: "Done" } : t)));
       } else {
+        // New task and Follow-up both create an assigned task
         setTasks((ts) => [
           ...ts,
-          { id: `tk-sg-${s.id}`, schoolId: s.schoolId, title: s.proposal, due: "This week", done: false },
+          {
+            id: `tk-sg-${s.id}`, schoolId: s.schoolId, title: s.proposal,
+            kind: s.type === "Follow-up" ? "whatsapp" : "followup",
+            due: "This week", assignedTo: s.assignedTo, done: false,
+          },
         ]);
       }
       log({ schoolId: s.schoolId, text: `Accepted: ${s.proposal}`, kind: "accepted" });
       return prev.map((x) => (x.id === id ? { ...x, status: "accepted" as const } : x));
     });
-  }, [log]);
+  }, [log, moveDeal]);
 
   const dismissSuggestion = useCallback((id: string) => {
     setSuggestions((prev) => {
@@ -108,19 +124,11 @@ export function PrototypeProvider({ children }: { children: ReactNode }) {
     setFollowing((f) => ({ ...f, [schoolId]: !f[schoolId] }));
   }, []);
 
-  const moveDeal = useCallback((schoolId: number, stage: DealStage) => {
-    setStages((st) => {
-      if (st[schoolId] === stage) return st;
-      const school = SCHOOLS.find((s) => s.id === schoolId);
-      log({ schoolId, text: `${school?.name ?? "Deal"} moved to ${stage}`, kind: "moved" });
-      return { ...st, [schoolId]: stage };
-    });
-  }, [log]);
-
   const value = useMemo<PrototypeState>(() => ({
-    suggestions, tasks, stages, following, activity, askOpen, setAskOpen, preview, setPreview,
+    suggestions, tasks, stages, following, activity, askOpen, setAskOpen,
+    preview, setPreview, view, setView,
     acceptSuggestion, dismissSuggestion, toggleTask, toggleFollow, moveDeal,
-  }), [suggestions, tasks, stages, following, activity, askOpen, preview,
+  }), [suggestions, tasks, stages, following, activity, askOpen, preview, view,
        acceptSuggestion, dismissSuggestion, toggleTask, toggleFollow, moveDeal]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

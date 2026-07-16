@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
   LayoutDashboard, Radar, Columns3, GraduationCap, Inbox, Settings,
-  Search, Bell, Sparkles, Tag, ChevronRight,
+  Search, Bell, Sparkles, Tag, ChevronRight, BarChart3,
 } from "lucide-react";
 import { CURRENT_USER } from "@/lib/sampleData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -25,6 +25,7 @@ const NAV = [
   { href: "/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/schools", label: "Schools", icon: GraduationCap },
   { href: "/review", label: "Review Queue", icon: Inbox },
+  { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -95,8 +96,8 @@ function Sidebar() {
             {CURRENT_USER.initials}
           </span>
           <div className="hidden leading-tight xl:block">
-            <div className="text-xs font-medium text-white">{CURRENT_USER.fullName}</div>
-            <div className="text-[10px] text-white/45">{CURRENT_USER.role}</div>
+            <div className="text-xs font-medium text-white">{CURRENT_USER.name}</div>
+            <div className="text-[10px] text-white/45">{CURRENT_USER.roleTitle}</div>
           </div>
         </div>
       </div>
