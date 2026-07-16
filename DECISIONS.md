@@ -1,7 +1,7 @@
 # DECISIONS.md — Hempac Sales Engine
 
 Defaults chosen where the specs are silent, per DESIGN-BUILD-HANDOFF §8.
-Behaviour authority: BUILD-SCOPE.md · Design authority: DESIGN-BUILD-HANDOFF.md.
+Behaviour authority: BUILD-SCOPE.md + SCOPE-ADDENDUM-v3.md · Design authority: DESIGN-BUILD-HANDOFF.md.
 
 ## Phase A1 (lo-fi wireframes)
 
@@ -31,3 +31,20 @@ Kev's gate decisions: **nav Variant A (dark brand sidebar)**; A2 proceeds with B
 | 15 | Fraunces loaded via `next/font/google`, used only in empty-state headlines (no auth screen exists in §4). Geist Sans via the `geist` package. | §1.3's constraint on where the serif may appear. |
 | 16 | The Ask drawer's fourth quick prompt ("Draft a follow-up") shows the draft with the line "I draft — you send." | Reinforces the read-only WhatsApp invariant inside the chat surface. |
 | 17 | Won-column sample deals (Kingsmead, Sunridge) are static and not draggable; live deals move through the same store the suggestions mutate. | They exist only to make Won look alive, per the demo dataset. |
+
+## Scope Addendum v3 (applied at the prototype layer)
+
+BUILD-SCOPE.md and Convex credentials are still absent, so v3 is applied to the
+clickable prototype (the UI contract) first; backend wiring follows in Phase B.
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 18 | Boards kanban renders all eight states as columns (Enquiry, Quotation Sent, the four buckets, Won, Lost); the four buckets are stored as the deal's stage. | §1 says a quoted deal sits in exactly one bucket; columns make bucket moves a drag, and the board scrolls horizontally per the responsive rules. |
+| 19 | "Demo Booked" no longer exists as a boards stage — demos live as tasks/meetings (and the demos KPI). The Marlborough suggestion became a New-task suggestion accordingly. | The v3 boards pipeline defines the stage list exhaustively. |
+| 20 | Greendale's in-chat suggestion now proposes **Awaiting Funds** ("committee approved, PO in process"). | Closest v3 bucket to the old "move to Procurement" story. |
+| 21 | The second admin is named **Gracious Banda** (surname invented); reps Tino Chisango and Rudo Kanjanda fill the sample roster (4 of 10 seats). | Addendum names only "Gracious"; sample data needs full names. |
+| 22 | §4 views: Global/Assigned-to-me is a toggle on the Pipeline board; All/Mine/Pending is a toggle on the rail's task list. "Assigned to me" = Emilia in the prototype (no auth in Phase A). | Views are filters over shared data, not pages; nav stays at 7 items with Reports added. |
+| 23 | Follow-up rate and tasks-completed figures in Reports are fabricated sample numbers. | Phase B computes them from task history; the prototype shows the report shape. |
+| 24 | wa.me links use fabricated +263 numbers per school and open in a new tab with the drafted text prefilled. | §10 "Open in WhatsApp" — the human sends; no send API anywhere. |
+| 25 | Time-driven suggestions render with a small "timed" clock badge, the suggested wording block, an Open-in-WhatsApp action, and the assigned rep's initials. | §7: routed to the assigned rep with "the words to say". |
+| 26 | Quotation-bucket, sent-vs-converted, and boards-sold dashboard cards compute live from the store/sample records (they follow kanban moves). | §8 headline views should demonstrably respond to pipeline changes at the review. |

@@ -5,17 +5,26 @@
  * Completed suggestions collapse into the activity feed below.
  */
 import Link from "next/link";
+import { useState } from "react";
 import { CheckCircle2, XCircle, ArrowRightCircle } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
-import { schoolById } from "@/lib/sampleData";
+import { CURRENT_USER, schoolById } from "@/lib/sampleData";
 import { SuggestionCard } from "./SuggestionCard";
 import { usePrototype } from "./store";
 import { cn } from "@/lib/utils";
 
+type TaskView = "all" | "mine" | "pending";
+
 export function NeedsYouRail() {
   const { suggestions, tasks, activity, toggleTask } = usePrototype();
+  const [taskView, setTaskView] = useState<TaskView>("all");
   const pending = suggestions.filter((s) => s.status === "pending").slice(0, 3);
   const pendingTotal = suggestions.filter((s) => s.status === "pending").length;
+  const visibleTasks = tasks.filter((t) => {
+    if (taskView === "mine") return t.assignedTo === CURRENT_USER.id;
+    if (taskView === "pending") return t.assignedTo === CURRENT_USER.id && !t.done;
+    return true;
+  });
 
   return (
     <Card className="h-fit">
@@ -44,9 +53,25 @@ export function NeedsYouRail() {
         </Link>
       )}
 
-      <div className="mb-2 mt-6 text-[10px] font-semibold uppercase tracking-widest text-faint">Tasks</div>
+      <div className="mb-2 mt-6 flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-faint">Tasks</span>
+        <div className="flex gap-0.5">
+          {(["all", "mine", "pending"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setTaskView(v)}
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide transition-colors duration-150",
+                taskView === v ? "bg-ink text-white" : "text-faint hover:text-muted"
+              )}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
       <ul className="space-y-2.5">
-        {tasks.map((task) => {
+        {visibleTasks.map((task) => {
           const school = task.schoolId ? schoolById(task.schoolId) : undefined;
           return (
             <li key={task.id} className="flex items-start gap-2.5">

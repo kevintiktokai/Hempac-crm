@@ -7,11 +7,15 @@
  * Phase A: scripted exchanges over sample data.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { X, Sparkles, Send, MessageCircle } from "lucide-react";
+import { X, Sparkles, Send, MessageCircle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { waLink } from "@/lib/sampleData";
 import { usePrototype } from "./store";
 import { cn } from "@/lib/utils";
+
+const HIGHFIELD_DRAFT =
+  "Good morning Mrs. Sibanda — following Tuesday's demo with your ICT committee, here's the quote for 8 boards across the two labs. Happy to walk the bursar through it, and to show you the same setup running at The Lookeron School.";
 
 interface ChatMsg {
   id: number;
@@ -47,7 +51,7 @@ function InlineSuggestion() {
   if (s.status !== "pending") {
     return (
       <div className="rounded-xl border border-line bg-green-soft px-3 py-2 text-[11px] text-green">
-        {s.status === "accepted" ? "Accepted — Greendale moved to Procurement." : "Dismissed — no change made."}
+        {s.status === "accepted" ? "Accepted — Greendale moved to Awaiting Funds." : "Dismissed — no change made."}
       </div>
     );
   }
@@ -74,16 +78,16 @@ function InlineSuggestion() {
 const SCRIPTS: Record<string, ReactNode> = {
   [QUICK_PROMPTS[0]]: (
     <>
-      <p>Open pipeline is <strong>$106.8k</strong> across 14 deals. Movement this week:</p>
-      <StatRow rows={[["Quote Sent · 3 deals", "$36.9k"], ["Demo Booked · 4 deals", "$34.6k"], ["Procurement · 1 deal", "$22.5k"]]} />
+      <p>Open pipeline is <strong>$108.2k</strong> across 12 deals — $94.8k boards, $13.4k sports. The boards side by bucket:</p>
+      <StatRow rows={[["Awaiting Response", "$32.0k"], ["Awaiting Term", "$9.2k"], ["Awaiting Funds", "$6.9k"], ["No Response", "$5.7k"]]} />
       <p className="mt-2">Greendale&rsquo;s finance committee met Thursday — worth a follow-up today.</p>
     </>
   ),
   [QUICK_PROMPTS[1]]: (
     <>
       <p>Three deals are waiting on you:</p>
-      <StatRow rows={[["Greendale · committee decision", "$32,000"], ["Northgate · signed PO in", "$22,500"], ["Highfield · quote requested", "$18,400"]]} />
-      <p className="mt-2">There are also 8 suggestions in your Review Queue.</p>
+      <StatRow rows={[["Greendale · committee decision", "$32,000"], ["Northgate · PO in, book install", "$22,500"], ["Highfield · quote requested", "$18,400"]]} />
+      <p className="mt-2">There are also 10 suggestions in your Review Queue — two are timed follow-ups with wording ready.</p>
     </>
   ),
   [QUICK_PROMPTS[2]]: (
@@ -97,11 +101,17 @@ const SCRIPTS: Record<string, ReactNode> = {
   ),
   [QUICK_PROMPTS[3]]: (
     <>
-      <p>Here&rsquo;s a draft you can copy into WhatsApp:</p>
+      <p>Here&rsquo;s a draft — open it in WhatsApp and send it yourself:</p>
       <div className="mt-2 rounded-lg border border-dashed border-faint/50 bg-cream px-2.5 py-2 text-[11px] leading-relaxed text-body">
-        Good morning Mrs. Sibanda — following Tuesday&rsquo;s demo with your ICT committee, here&rsquo;s the quote for 8 boards
-        across the two labs. Happy to walk the bursar through it, and to show you the same setup running at The Lookeron School.
+        {HIGHFIELD_DRAFT}
       </div>
+      <a
+        href={waLink("263773310290", HIGHFIELD_DRAFT)}
+        target="_blank" rel="noopener noreferrer"
+        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-success/40 px-2.5 py-1.5 text-[11px] font-medium text-success transition-colors hover:bg-green-soft"
+      >
+        <ExternalLink size={11} /> Open in WhatsApp
+      </a>
       <p className="mt-2 text-[11px] text-faint">I draft — you send. Nothing goes out from your number automatically.</p>
     </>
   ),

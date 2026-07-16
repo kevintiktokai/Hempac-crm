@@ -14,8 +14,20 @@ export const productTone = (p: Product): ChipTone =>
 export const engineTone = (s: EngineStage): ChipTone =>
   ({ Discovered: "neutral", Scored: "gold", Contacted: "amber", Replied: "terra", "In pipeline": "green" } as const)[s];
 
+/** Stage tones across BOTH pipelines (§1: boards quotation-driven, sports transactional). */
 export const dealTone = (s: DealStage): ChipTone =>
-  ({ "New Enquiry": "neutral", "Demo Booked": "gold", "Quote Sent": "amber", Procurement: "terra", Won: "success", Lost: "danger" } as const)[s];
+  ({
+    Enquiry: "neutral",
+    "Quotation Sent": "gold",
+    "Awaiting Response": "amber",
+    "Awaiting Term": "gold",
+    "Awaiting Funds": "terra",
+    "No Response": "danger",
+    Interested: "green",
+    "Not Now": "amber",
+    Won: "success",
+    Lost: "danger",
+  } as const)[s];
 
 export function Avatar({ initials, tone = "green", size = "md" }: { initials: string; tone?: "green" | "terra" | "muted"; size?: "sm" | "md" }) {
   return (
