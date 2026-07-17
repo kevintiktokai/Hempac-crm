@@ -10,6 +10,7 @@ import { Search, Download, ChevronDown, GraduationCap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
+import { AddLeadDialog } from "@/components/crm/AddLeadDialog";
 import { FitBar, PriorityBars, productTone, engineTone } from "@/components/crm/bits";
 import { PageState, EmptyState, LoadingSkeleton } from "@/components/crm/PageState";
 import { useSchools } from "@/components/crm/data";
@@ -50,9 +51,12 @@ export default function SchoolsPage() {
         <LoadingSkeleton variant="table" />
       ) : (
         <div className="p-6">
-          <div className="mb-5">
-            <h1 className="text-xl font-semibold text-ink">Schools</h1>
-            <p className="mt-0.5 text-sm text-muted">342 identified across Zimbabwe · {schools.length} tracked</p>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h1 className="text-xl font-semibold text-ink">Leads</h1>
+              <p className="mt-0.5 text-sm text-muted">342 identified across Zimbabwe · {schools.length} in the system</p>
+            </div>
+            <AddLeadDialog />
           </div>
 
           <Card className="!p-0">

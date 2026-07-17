@@ -20,13 +20,14 @@ async function userMap(ctx: QueryCtx): Promise<Map<Id<"users">, Doc<"users">>> {
 function enrichSuggestion(
   s: Doc<"suggestions">,
   school: Doc<"schools"> | null,
-  assignee: Doc<"users"> | undefined
+  assignee: Doc<"users"> | undefined,
+  threadFallback?: { name: string; phone: string }
 ) {
   return {
     _id: s._id,
     schoolId: s.schoolId,
-    schoolName: school?.name ?? "Unknown school",
-    schoolPhone: school?.phone ?? "",
+    schoolName: school?.name ?? threadFallback?.name ?? "New chat",
+    schoolPhone: school?.phone ?? threadFallback?.phone ?? "",
     dealId: s.dealId,
     type: s.type,
     trigger: s.trigger,
@@ -104,9 +105,14 @@ export const pendingSuggestions = query({
       .withIndex("by_status", (q) => q.eq("status", "pending"))
       .collect();
     return Promise.all(
-      pending.map(async (s) =>
-        enrichSuggestion(s, await ctx.db.get(s.schoolId), users.get(s.assignedTo))
-      )
+      pending.map(async (s) => {
+        const school = s.schoolId ? await ctx.db.get(s.schoolId) : null;
+        const thread = !school && s.threadId ? await ctx.db.get(s.threadId) : null;
+        return enrichSuggestion(
+          s, school, users.get(s.assignedTo),
+          thread ? { name: thread.displayName ?? thread.phone ?? "New chat", phone: thread.phone ?? "" } : undefined
+        );
+      })
     );
   },
 });
@@ -333,6 +339,8 @@ export const reports = query({
       .map((u) => {
         const sent = quotes.filter((q) => q.ownerId === u._id);
         const won = sent.filter((q) => q.status === "won");
+        const done = tasks.filter((t) => t.assignedTo === u._id && t.status === "done");
+        const kindCount = (kind: string): number => done.filter((t) => t.kind === kind).length;
         return {
           userId: u._id,
           name: u.name,
@@ -344,7 +352,12 @@ export const reports = query({
           wonValue: won.reduce((a, q) => a + q.value, 0),
           soldValue: orders.filter((o) => o.ownerId === u._id).reduce((a, o) => a + o.value, 0),
           followUp: FOLLOWUP_RATE[u.initials] ?? 70,
-          tasksDone: tasks.filter((t) => t.assignedTo === u._id && t.status === "done").length,
+          tasksDone: done.length,
+          activity: {
+            calls: kindCount("call"),
+            meetings: kindCount("meeting"),
+            followups: kindCount("followup") + kindCount("whatsapp"),
+          },
         };
       })
       .sort((a, b) => b.soldValue - a.soldValue);

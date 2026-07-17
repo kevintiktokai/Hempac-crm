@@ -31,7 +31,7 @@ const engineStage = v.union(
 
 const suggestionType = v.union(
   v.literal("Stage change"), v.literal("Task done"),
-  v.literal("New task"), v.literal("Follow-up")
+  v.literal("New task"), v.literal("Follow-up"), v.literal("New lead")
 );
 const suggestionTrigger = v.union(v.literal("conversation"), v.literal("time_in_pipeline"));
 const suggestionStatus = v.union(v.literal("pending"), v.literal("accepted"), v.literal("dismissed"));
@@ -185,9 +185,12 @@ export default defineSchema({
     read: v.boolean(),
   }).index("by_user_read", ["userId", "read"]),
 
-  // Gate 2 — every AI-proposed change waits here for accept/dismiss
+  // Gate 2 — every AI-proposed change waits here for accept/dismiss.
+  // "New lead" suggestions reference a thread instead of a school (the
+  // school doesn't exist until the suggestion is accepted).
   suggestions: defineTable({
-    schoolId: v.id("schools"),
+    schoolId: v.optional(v.id("schools")),
+    threadId: v.optional(v.id("threads")),
     dealId: v.optional(v.id("deals")),
     type: suggestionType,
     trigger: suggestionTrigger,

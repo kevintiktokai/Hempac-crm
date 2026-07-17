@@ -40,6 +40,8 @@ export function useCrmActions() {
   const readAll = useMutation(api.notify.markAllRead);
   const threadTracking = useMutation(api.actions.toggleThreadTracking);
   const sync = useAction(api.whatsapp.syncInbox);
+  const promote = useMutation(api.actions.promoteThread);
+  const lead = useMutation(api.actions.createLead);
   const me = CURRENT_USER.initials;
   return {
     acceptSuggestion: (suggestionId: Id<"suggestions">) =>
@@ -52,10 +54,15 @@ export function useCrmActions() {
     toggleFollow: (schoolId: Id<"schools">) => follow({ schoolId }),
     createTask: (args: {
       title: string; kind: TaskKind; schoolId?: Id<"schools">;
-      assigneeInitials: string; dueAt: number; remindAt?: number;
+      assigneeInitials: string; dueAt: number; remindAt?: number; alreadyDone?: boolean;
     }) => create({ ...args, actorInitials: me }),
     markNotificationsRead: () => readAll({ initials: me }),
     toggleThreadTracking: (threadId: Id<"threads">) => threadTracking({ threadId }),
     syncInboxNow: () => sync(),
+    promoteThread: (threadId: Id<"threads">) => promote({ threadId, actorInitials: me }),
+    createLead: (args: {
+      name: string; region: string; phone?: string;
+      pipelineType: PipelineType; assigneeInitials: string;
+    }) => lead({ ...args, actorInitials: me }),
   };
 }

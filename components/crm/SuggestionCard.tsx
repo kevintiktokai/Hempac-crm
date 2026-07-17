@@ -18,6 +18,7 @@ const TYPE_TONE: Record<SuggestionType, ChipTone> = {
   "Task done": "success",
   "New task": "gold",
   "Follow-up": "amber",
+  "New lead": "green",
 };
 
 export function SuggestionCard({

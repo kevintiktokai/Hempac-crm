@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import {
   LayoutDashboard, Radar, Columns3, GraduationCap, Inbox, Settings,
-  Search, Bell, Sparkles, Tag, ChevronRight, BarChart3,
+  Search, Bell, Sparkles, Tag, ChevronRight, BarChart3, MessagesSquare, ListTodo,
 } from "lucide-react";
 import { CURRENT_USER } from "@/lib/sampleData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,9 +22,11 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/inbox", label: "Inbox", icon: MessagesSquare },
   { href: "/engine", label: "Lead Engine", icon: Radar },
   { href: "/pipeline", label: "Pipeline", icon: Columns3 },
-  { href: "/schools", label: "Schools", icon: GraduationCap },
+  { href: "/schools", label: "Leads", icon: GraduationCap },
+  { href: "/tasks", label: "Tasks", icon: ListTodo },
   { href: "/review", label: "Review Queue", icon: Inbox },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },

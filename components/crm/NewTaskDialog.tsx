@@ -48,6 +48,7 @@ export function NewTaskDialog({
   const [assignee, setAssignee] = useState(CURRENT_USER.initials);
   const [due, setDue] = useState<(typeof DUE_CHOICES)[number]["label"]>("Tomorrow");
   const [remind, setRemind] = useState<(typeof REMIND_CHOICES)[number]["label"]>("1d before");
+  const [alreadyDone, setAlreadyDone] = useState(false);
 
   const submit = async () => {
     const trimmed = title.trim();
@@ -60,9 +61,11 @@ export function NewTaskDialog({
       schoolId: schoolId ? (schoolId as Id<"schools">) : undefined,
       assigneeInitials: assignee,
       dueAt,
-      remindAt: remindHours > 0 ? dueAt - remindHours * 3600 * 1000 : undefined,
+      remindAt: !alreadyDone && remindHours > 0 ? dueAt - remindHours * 3600 * 1000 : undefined,
+      alreadyDone,
     });
     setTitle("");
+    setAlreadyDone(false);
     setOpen(false);
   };
 
@@ -135,7 +138,17 @@ export function NewTaskDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 rounded-lg border border-line px-3 py-2">
+            <input
+              type="checkbox"
+              checked={alreadyDone}
+              onChange={(e) => setAlreadyDone(e.target.checked)}
+              className="h-3.5 w-3.5 accent-[#2E5A40]"
+            />
+            <span className="text-xs text-body">This already happened — log it as a completed activity</span>
+          </label>
+
+          <div className={alreadyDone ? "hidden" : "grid grid-cols-2 gap-3"}>
             <div>
               <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-faint">Due</span>
               <div className="flex flex-wrap gap-1.5">
@@ -173,7 +186,7 @@ export function NewTaskDialog({
           </div>
 
           <Button variant="success" size="lg" className="w-full" onClick={() => void submit()} disabled={!title.trim()}>
-            Log task
+            {alreadyDone ? "Log activity" : "Log task"}
           </Button>
         </div>
       </DialogContent>

@@ -181,7 +181,12 @@ export default function ReportsPage() {
                 <span className="text-xs font-semibold tabular-nums text-body">{r.followUp}%</span>
                 <span className="text-[10px] text-faint">on time</span>
               </div>
-              <div className="text-right text-sm tabular-nums text-body md:col-span-2">{r.tasksDone}</div>
+              <div className="text-right md:col-span-2">
+                <div className="text-sm tabular-nums text-body">{r.tasksDone}</div>
+                <div className="text-[10px] text-faint">
+                  {r.activity.calls} calls · {r.activity.meetings} mtgs · {r.activity.followups} f-ups
+                </div>
+              </div>
             </div>
           ))}
         </Card>
