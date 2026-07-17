@@ -24,6 +24,7 @@ export const useNotifications = () =>
   useQuery(api.notify.myNotifications, { initials: CURRENT_USER.initials });
 export const useSyncState = () => useQuery(api.whatsapp.getState);
 export const useThreads = () => useQuery(api.whatsapp.listThreads);
+export const useAiStatus = () => useQuery(api.engine.aiStatus);
 
 export type EnrichedSuggestion = NonNullable<ReturnType<typeof usePendingSuggestions>>[number];
 export type EnrichedTask = NonNullable<ReturnType<typeof useTasks>>[number];

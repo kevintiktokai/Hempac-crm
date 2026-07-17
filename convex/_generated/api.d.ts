@@ -11,6 +11,7 @@
 import type * as actions from "../actions.js";
 import type * as crm from "../crm.js";
 import type * as crons from "../crons.js";
+import type * as engine from "../engine.js";
 import type * as notify from "../notify.js";
 import type * as seed from "../seed.js";
 import type * as whatsapp from "../whatsapp.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   crm: typeof crm;
   crons: typeof crons;
+  engine: typeof engine;
   notify: typeof notify;
   seed: typeof seed;
   whatsapp: typeof whatsapp;

@@ -11,4 +11,8 @@ crons.interval("scan task reminders", { minutes: 15 }, internal.notify.scanRemin
 // tick, hard-capped per sweep — human-paced by design.
 crons.interval("sync whatsapp inbox", { minutes: 10 }, internal.whatsapp.runSync, {});
 
+// Time-in-pipeline suggestion sweep (addendum §7): daily, early morning
+// Harare time, so follow-ups greet the team at the start of the day.
+crons.daily("time-in-pipeline sweep", { hourUTC: 4, minuteUTC: 30 }, internal.engine.timeSweep, {});
+
 export default crons;

@@ -2,6 +2,7 @@ import { action, internalAction, internalMutation, query } from "./_generated/se
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import type { ActionCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 /**
  * Sprint 2 — read-only WhatsApp ingestion loop (BUILD-SCOPE §4.2, addendum §10).
@@ -160,6 +161,7 @@ export const ingest = internalMutation({
     let newMessages = 0;
     let newChats = 0;
     let skippedExcluded = 0;
+    const threadsWithNews: Id<"threads">[] = [];
 
     for (const chat of args.chats) {
       let thread = await ctx.db
@@ -207,6 +209,7 @@ export const ingest = internalMutation({
         continue;
       }
 
+      let threadNews = false;
       for (const m of chat.messages) {
         if (newMessages >= cap) break;
         const existing = await ctx.db
@@ -222,8 +225,16 @@ export const ingest = internalMutation({
           waMessageId: m.waMessageId,
         });
         newMessages += 1;
+        if (m.direction === "in") threadNews = true;
       }
+      if (threadNews && thread.schoolId) threadsWithNews.push(thread._id);
       await ctx.db.patch(thread._id, { lastSyncAt: Date.now() });
+    }
+
+    // Conversation-driven suggestion engine: analyse the (few) threads that
+    // received new inbound messages this sweep — same human-paced budget.
+    for (const threadId of threadsWithNews.slice(0, 3)) {
+      await ctx.scheduler.runAfter(0, internal.engine.analyzeThread, { threadId });
     }
 
     const result = `+${newMessages} messages, +${newChats} chats${

@@ -11,7 +11,7 @@ import { Chip } from "@/components/ui/chip";
 import { Switch } from "@/components/ui/switch";
 import { FitBar, engineTone } from "@/components/crm/bits";
 import { PageState, EmptyState, LoadingSkeleton } from "@/components/crm/PageState";
-import { useEngineSettings, useSchools } from "@/components/crm/data";
+import { useAiStatus, useEngineSettings, useSchools } from "@/components/crm/data";
 import { FUNNEL } from "@/lib/sampleData";
 
 const FUNNEL_DOTS = ["bg-faint", "bg-gold", "bg-amber", "bg-terra", "bg-green"];
@@ -19,6 +19,7 @@ const FUNNEL_DOTS = ["bg-faint", "bg-gold", "bg-amber", "bg-terra", "bg-green"];
 export default function EnginePage() {
   const schools = useSchools();
   const engine = useEngineSettings();
+  const ai = useAiStatus();
 
   if (schools === undefined || engine === undefined) return <LoadingSkeleton variant="table" />;
 
@@ -154,6 +155,20 @@ export default function EnginePage() {
                 <div className="h-full w-1/2 rounded-full bg-terra" />
               </div>
               <span className="text-xs font-semibold tabular-nums text-body">{engine?.throughputCap ?? 10} / day</span>
+            </div>
+            <div className="mt-4">
+              <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-faint">Intelligence</div>
+              <div className="flex items-center justify-between rounded-lg border border-line px-3 py-2">
+                <span className="text-xs text-body">OpenAI · {ai?.model ?? "gpt-4o-mini"}</span>
+                <Chip tone={ai?.configured ? "success" : "amber"}>
+                  {ai?.configured ? "connected" : "key pending"}
+                </Chip>
+              </div>
+              {!ai?.configured && (
+                <p className="mt-1.5 text-[10px] leading-snug text-faint">
+                  Heuristic + templated suggestions until OPENAI_API_KEY is set on the deployment.
+                </p>
+              )}
             </div>
             <p className="mt-4 rounded-lg bg-green-soft px-3 py-2.5 text-[11px] leading-snug text-green">
               Outreach is drafted by the engine and sent by you on WhatsApp. The system never sends messages itself.
