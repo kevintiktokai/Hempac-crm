@@ -76,7 +76,7 @@ export const acceptSuggestion = mutation({
       ).find((t) => t.status === "open");
       if (open) {
         await ctx.db.patch(open._id, {
-          status: "done", dueLabel: "Done", completedBy: user._id, completedAt: Date.now(),
+          status: "done", completedBy: user._id, completedAt: Date.now(),
         });
       }
     } else {
@@ -85,7 +85,7 @@ export const acceptSuggestion = mutation({
         dealId: s.dealId,
         title: s.proposal,
         kind: s.type === "Follow-up" ? "whatsapp" : "followup",
-        dueLabel: "This week",
+        dueAt: Date.now() + 3 * 24 * 3600 * 1000,
         assignedTo: s.assignedTo,
         status: "open",
       });
@@ -127,13 +127,50 @@ export const toggleTask = mutation({
     const user = await actor(ctx, args.actorInitials);
     if (task.status === "open") {
       await ctx.db.patch(args.taskId, {
-        status: "done", dueLabel: "Done", completedBy: user._id, completedAt: Date.now(),
+        status: "done", completedBy: user._id, completedAt: Date.now(),
       });
     } else {
       await ctx.db.patch(args.taskId, {
-        status: "open", dueLabel: "This week", completedBy: undefined, completedAt: undefined,
+        status: "open", completedBy: undefined, completedAt: undefined,
       });
     }
+  },
+});
+
+/** Log a task/reminder against a school or standalone (addendum §5). */
+export const createTask = mutation({
+  args: {
+    title: v.string(),
+    kind: v.union(
+      v.literal("followup"), v.literal("meeting"), v.literal("call"),
+      v.literal("whatsapp"), v.literal("other")
+    ),
+    schoolId: v.optional(v.id("schools")),
+    assigneeInitials: v.string(),
+    dueAt: v.number(),
+    remindAt: v.optional(v.number()),
+    actorInitials: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const creator = await actor(ctx, args.actorInitials);
+    const assignee = await actor(ctx, args.assigneeInitials);
+    const taskId = await ctx.db.insert("tasks", {
+      schoolId: args.schoolId,
+      title: args.title,
+      kind: args.kind,
+      dueAt: args.dueAt,
+      remindAt: args.remindAt,
+      assignedTo: assignee._id,
+      status: "open",
+    });
+    await ctx.db.insert("audit", {
+      entity: "tasks",
+      entityId: taskId,
+      action: `Task logged: ${args.title} (assigned ${assignee.name.split(" ")[0]})`,
+      actorId: creator._id,
+      atLabel: nowLabel(),
+    });
+    return taskId;
   },
 });
 

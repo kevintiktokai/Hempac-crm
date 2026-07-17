@@ -140,7 +140,12 @@ export default defineSchema({
     dealId: v.optional(v.id("deals")),
     title: v.string(),
     kind: taskKind,
-    dueLabel: v.string(),
+    // Sprint 1b: real timestamps. dueLabel/remindLabel are legacy display
+    // strings kept optional until old rows age out of the dev deployment.
+    dueAt: v.optional(v.number()),
+    remindAt: v.optional(v.number()),
+    remindedAt: v.optional(v.number()),
+    dueLabel: v.optional(v.string()),
     remindLabel: v.optional(v.string()),
     assignedTo: v.id("users"),
     status: v.union(v.literal("open"), v.literal("done")),
@@ -148,7 +153,17 @@ export default defineSchema({
     completedAt: v.optional(v.number()),
   })
     .index("by_assignee_status", ["assignedTo", "status"])
-    .index("by_school", ["schoolId"]),
+    .index("by_school", ["schoolId"])
+    .index("by_status", ["status"]),
+
+  // Sprint 1b: in-app reminder notifications (addendum §5), produced by the
+  // reminder cron when a task's remindAt passes.
+  notifications: defineTable({
+    userId: v.id("users"),
+    taskId: v.optional(v.id("tasks")),
+    text: v.string(),
+    read: v.boolean(),
+  }).index("by_user_read", ["userId", "read"]),
 
   // Gate 2 — every AI-proposed change waits here for accept/dismiss
   suggestions: defineTable({

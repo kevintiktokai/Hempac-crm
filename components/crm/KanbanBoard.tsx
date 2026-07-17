@@ -33,7 +33,7 @@ const STAGE_DOTS: Record<DealStage, string> = {
   Lost: "bg-danger",
 };
 
-export function KanbanBoard({ pipeline }: { pipeline: PipelineType }) {
+export function KanbanBoard({ pipeline, repFilter }: { pipeline: PipelineType; repFilter?: string | null }) {
   const data = useBoard(pipeline);
   const { moveDeal } = useCrmActions();
   const { view } = usePrototype();
@@ -43,9 +43,9 @@ export function KanbanBoard({ pipeline }: { pipeline: PipelineType }) {
   if (data === undefined) return <LoadingSkeleton variant="kanban" />;
 
   const stageList: readonly DealStage[] = pipeline === "boards" ? BOARDS_STAGES : SPORTS_STAGES;
-  const deals = data.deals.filter(
-    (d) => view === "global" || d.assigneeInitials === CURRENT_USER.initials
-  );
+  const deals = data.deals
+    .filter((d) => view === "global" || d.assigneeInitials === CURRENT_USER.initials)
+    .filter((d) => !repFilter || d.assigneeInitials === repFilter);
 
   const onDrop = (e: DragEvent, stage: DealStage) => {
     e.preventDefault();
