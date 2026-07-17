@@ -16,6 +16,7 @@ import {
 import { CURRENT_USER } from "@/lib/sampleData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { usePrototype } from "./store";
+import { usePendingSuggestions } from "./data";
 import { AskDrawer } from "./AskDrawer";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +32,7 @@ const NAV = [
 
 function Sidebar() {
   const pathname = usePathname();
-  const { suggestions } = usePrototype();
-  const pending = suggestions.filter((s) => s.status === "pending").length;
+  const pending = usePendingSuggestions()?.length ?? 0;
   return (
     <aside className="flex w-16 shrink-0 flex-col justify-between bg-ink xl:w-60">
       <div>

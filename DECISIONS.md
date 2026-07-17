@@ -49,3 +49,23 @@ clickable prototype (the UI contract) first; backend wiring follows in Phase B.
 | 25 | Time-driven suggestions render with a small "timed" clock badge, the suggested wording block, an Open-in-WhatsApp action, and the assigned rep's initials. | §7: routed to the assigned rep with "the words to say". |
 | 26 | Quotation-bucket, sent-vs-converted, and boards-sold dashboard cards compute live from the store/sample records (they follow kanban moves). | §8 headline views should demonstrably respond to pipeline changes at the review. |
 | 27 | **BUILD-SCOPE.md is a labelled reconstruction**, assembled solely from the references in DESIGN-BUILD-HANDOFF v1 and SCOPE-ADDENDUM v3 (invariants, data model, modules, sprints). | The original v2 was never supplied to the session; the user asked for BUILD-SCOPE to be added. If the original is recovered it replaces this file verbatim and wins on any difference. |
+
+## Phase B — Sprint 0 (Convex foundations)
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 28 | Dev deploy key lives only in gitignored `.env.local` (plus `NEXT_PUBLIC_CONVEX_URL=https://glorious-fox-328.convex.cloud`). The key must also be added to Vercel env vars and the remote-session environment settings — this container is ephemeral. | BUILD-SCOPE §2.5 secrets hygiene; only the public deployment URL may be NEXT_PUBLIC_. |
+| 29 | Date-ish fields ship as display-string labels (`createdAtLabel`, `dueLabel`, `sentAtLabel`) in Sprint 0, matching the prototype dataset. Sprint 1b converts due/remind to real timestamps when notifications land. | Keeps the seed faithful to the approved UI while the tasks module is still prototype-side. |
+| 30 | `convex/_generated` is committed so typecheck/build work without running the Convex CLI. | CI (Vercel) has no deploy key at build time. |
+| 31 | The Convex client mounts behind a guard: without `NEXT_PUBLIC_CONVEX_URL` the app renders exactly as the Phase A prototype. UI reads stay on the client store until Sprint 1 migrates them. | Sprint 0 is foundations only; previews stay green before the env var is configured. |
+| 32 | Seed (`seed:run`) is idempotent (wipe + insert) and mirrors the approved sample dataset; verified live — `crm:dashboardStats` returns the same numbers the prototype shows. | Sprint 1 wires screens to queries against familiar data. |
+
+## Phase B — Sprint 1 (live CRM core)
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 33 | All screens read display-ready, server-joined payloads (`crm.ts` queries); Accept/Dismiss, kanban moves, task toggles and Follow write through `actions.ts` mutations, every write audit-logged. `usePrototype` shrank to UI-only state (drawer, preview control, view scope). | Same component API as the approved prototype; the store swap is invisible to the design. |
+| 34 | Mutations take the acting user's initials from the client (Emilia) until the auth sprint adds real identity. | Shared visibility (§6) means no data restriction is bypassed; assignment/audit still record the actor. |
+| 35 | The rail's activity feed now renders the audit trail (accepted/dismissed/moved), so team actions are visible live. | Addendum §3's accountability story, for free from the audit table. |
+| 36 | The sandbox's headless browser cannot reach convex.cloud (egress resets it; curl/CLI work). Verification ran through a local relay (scratchpad only, not committed) forwarding HTTP+WebSocket to Convex; a test build pointed NEXT_PUBLIC_CONVEX_URL at it. Real browsers connect directly — this limitation is environment-only. | End-to-end proof: accept → stage applied + audit + survives hard reload; drag persists; follow persists. |
+| 37 | Demos list, engine funnel counts, leads-this-month and demos-booked KPIs remain sample figures. | They belong to the meetings module (Sprint 1b) and the engine (Sprint 4). |

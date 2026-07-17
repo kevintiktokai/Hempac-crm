@@ -5,6 +5,7 @@ import "./globals.css";
 import { Shell } from "@/components/crm/Shell";
 import { PrototypeProvider } from "@/components/crm/store";
 import { StatePreviewControl } from "@/components/crm/PageState";
+import { ConvexClientProvider } from "@/components/crm/ConvexClientProvider";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -21,10 +22,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${GeistSans.variable} ${fraunces.variable}`}>
       <body className="font-sans">
-        <PrototypeProvider>
-          <Shell>{children}</Shell>
-          <StatePreviewControl />
-        </PrototypeProvider>
+        <ConvexClientProvider>
+          <PrototypeProvider>
+            <Shell>{children}</Shell>
+            <StatePreviewControl />
+          </PrototypeProvider>
+        </ConvexClientProvider>
       </body>
     </html>
   );

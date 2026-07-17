@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * Review Queue (§4.6): every pending suggestion, grouped by school, bulk
- * accept/dismiss, filter by type. Empty state celebrates inbox-zero.
+ * Review Queue (§4.6), live from Convex: every pending suggestion grouped
+ * by school, bulk accept/dismiss (server-applied, audit-logged), filter by
+ * type. Empty state celebrates inbox-zero.
  */
 import { useMemo, useState } from "react";
 import { ChevronDown, Inbox } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SuggestionCard } from "@/components/crm/SuggestionCard";
-import { PageState, EmptyState } from "@/components/crm/PageState";
-import { usePrototype } from "@/components/crm/store";
-import { schoolById, type SuggestionType } from "@/lib/sampleData";
+import { PageState, LoadingSkeleton } from "@/components/crm/PageState";
+import { useCrmActions, usePendingSuggestions, type EnrichedSuggestion } from "@/components/crm/data";
+import type { SuggestionType } from "@/lib/sampleData";
 
-const TYPE_FILTERS: ("All" | SuggestionType)[] = ["All", "Stage change", "Task done", "New task"];
+const TYPE_FILTERS: ("All" | SuggestionType)[] = ["All", "Stage change", "Task done", "New task", "Follow-up"];
 
 function InboxZero() {
   return (
@@ -30,29 +31,32 @@ function InboxZero() {
 }
 
 export default function ReviewQueuePage() {
-  const { suggestions, acceptSuggestion, dismissSuggestion } = usePrototype();
+  const suggestions = usePendingSuggestions();
+  const { acceptSuggestion, dismissSuggestion } = useCrmActions();
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>("All");
 
   const pending = useMemo(
-    () => suggestions.filter((s) => s.status === "pending" && (typeFilter === "All" || s.type === typeFilter)),
+    () => (suggestions ?? []).filter((s) => typeFilter === "All" || s.type === typeFilter),
     [suggestions, typeFilter]
   );
 
   const bySchool = useMemo(() => {
-    const map = new Map<number, typeof pending>();
+    const map = new Map<string, EnrichedSuggestion[]>();
     for (const s of pending) {
-      const list = map.get(s.schoolId) ?? [];
+      const list = map.get(s.schoolName) ?? [];
       list.push(s);
-      map.set(s.schoolId, list);
+      map.set(s.schoolName, list);
     }
     return map;
   }, [pending]);
 
-  const allPendingCount = suggestions.filter((s) => s.status === "pending").length;
+  if (suggestions === undefined) {
+    return <LoadingSkeleton variant="table" />;
+  }
 
   return (
     <PageState skeleton="table" empty={<InboxZero />}>
-      {allPendingCount === 0 ? (
+      {suggestions.length === 0 ? (
         <InboxZero />
       ) : (
         <div className="p-6">
@@ -60,7 +64,7 @@ export default function ReviewQueuePage() {
             <div>
               <h1 className="text-xl font-semibold text-ink">Review Queue</h1>
               <p className="mt-0.5 text-sm text-muted">
-                {allPendingCount} suggestion{allPendingCount === 1 ? "" : "s"} waiting · nothing changes until you accept it
+                {suggestions.length} suggestion{suggestions.length === 1 ? "" : "s"} waiting · nothing changes until you accept it
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -75,10 +79,10 @@ export default function ReviewQueuePage() {
                 </select>
                 <ChevronDown size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-faint" />
               </div>
-              <Button variant="ghost" onClick={() => pending.forEach((s) => dismissSuggestion(s.id))}>
+              <Button variant="ghost" onClick={() => pending.forEach((s) => dismissSuggestion(s._id))}>
                 Dismiss all
               </Button>
-              <Button variant="success" onClick={() => pending.forEach((s) => acceptSuggestion(s.id))}>
+              <Button variant="success" onClick={() => pending.forEach((s) => acceptSuggestion(s._id))}>
                 Accept all
               </Button>
             </div>
@@ -90,31 +94,27 @@ export default function ReviewQueuePage() {
             </p>
           ) : (
             <div className="space-y-5">
-              {Array.from(bySchool.entries()).map(([schoolId, items]) => {
-                const school = schoolById(schoolId);
-                if (!school) return null;
-                return (
-                  <Card key={schoolId} className="!p-0">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
-                      <div>
-                        <span className="text-sm font-semibold text-body">{school.name}</span>
-                        <span className="ml-2 text-xs text-muted">{items.length} pending</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="subtle" size="sm" onClick={() => items.forEach((s) => acceptSuggestion(s.id))}>
-                          Accept group
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => items.forEach((s) => dismissSuggestion(s.id))}>
-                          Dismiss group
-                        </Button>
-                      </div>
+              {Array.from(bySchool.entries()).map(([schoolName, items]) => (
+                <Card key={schoolName} className="!p-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5">
+                    <div>
+                      <span className="text-sm font-semibold text-body">{schoolName}</span>
+                      <span className="ml-2 text-xs text-muted">{items.length} pending</span>
                     </div>
-                    <div className="grid gap-4 p-5 md:grid-cols-2">
-                      {items.map((s) => <SuggestionCard key={s.id} s={s} />)}
+                    <div className="flex gap-2">
+                      <Button variant="subtle" size="sm" onClick={() => items.forEach((s) => acceptSuggestion(s._id))}>
+                        Accept group
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => items.forEach((s) => dismissSuggestion(s._id))}>
+                        Dismiss group
+                      </Button>
                     </div>
-                  </Card>
-                );
-              })}
+                  </div>
+                  <div className="grid gap-4 p-5 md:grid-cols-2">
+                    {items.map((s) => <SuggestionCard key={s._id} s={s} />)}
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>

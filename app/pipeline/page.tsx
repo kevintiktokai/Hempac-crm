@@ -1,30 +1,28 @@
 "use client";
 
 /**
- * Pipeline (§4.3 + addendum §1, §4): two pipeline types behind a toggle
- * (Boards quotation-driven / Sports transactional), Global vs Assigned-to-me
- * view, live drag-and-drop with drop-glow and the Won check-burst.
+ * Pipeline (§4.3 + addendum §1, §4): two live pipelines behind a toggle,
+ * Global vs Assigned-to-me view, drag-and-drop persisted via Convex.
  */
 import { useState } from "react";
 import { Columns3, Presentation, Volleyball } from "lucide-react";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { PageState, EmptyState } from "@/components/crm/PageState";
+import { useBoard } from "@/components/crm/data";
 import { usePrototype } from "@/components/crm/store";
-import { DEALS, ORDERS, money, type PipelineType } from "@/lib/sampleData";
+import { money, type PipelineType } from "@/lib/sampleData";
 import { cn } from "@/lib/utils";
 
 export default function PipelinePage() {
-  const { stages, view, setView } = usePrototype();
+  const { view, setView } = usePrototype();
   const [pipeline, setPipeline] = useState<PipelineType>("boards");
+  const data = useBoard(pipeline);
 
-  const live = DEALS.filter((d) => d.pipeline === pipeline);
-  const open = live.filter((d) => stages[d.id] !== "Won" && stages[d.id] !== "Lost");
+  const open = data?.deals.filter((d) => d.stage !== "Won" && d.stage !== "Lost") ?? [];
   const openValue = open.reduce((a, d) => a + d.value, 0);
   const wonValue =
-    live.filter((d) => stages[d.id] === "Won").reduce((a, d) => a + d.value, 0) +
-    ORDERS.filter((o) =>
-      pipeline === "boards" ? o.product === "Smart Boards" && o.schoolId === null : o.product === "Sports Equipment"
-    ).reduce((a, o) => a + o.value, 0);
+    (data?.deals.filter((d) => d.stage === "Won").reduce((a, d) => a + d.value, 0) ?? 0) +
+    (data?.historicalWins.reduce((a, w) => a + w.value, 0) ?? 0);
 
   return (
     <PageState
@@ -49,7 +47,6 @@ export default function PipelinePage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* Pipeline type toggle (§1) */}
             <div className="flex rounded-lg border border-line bg-card p-0.5">
               {(
                 [
@@ -69,7 +66,6 @@ export default function PipelinePage() {
                 </button>
               ))}
             </div>
-            {/* View scope (§4) */}
             <div className="flex rounded-lg border border-line bg-card p-0.5">
               {(
                 [
