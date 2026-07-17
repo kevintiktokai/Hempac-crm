@@ -181,6 +181,23 @@ export const ingest = internalMutation({
         });
         thread = await ctx.db.get(threadId);
         newChats += 1;
+        // Unknown number → propose extracting a lead (Gate 2: the lead is
+        // only created if a human accepts).
+        if (!school && thread) {
+          const founder = (await ctx.db.query("users").collect()).find((u) => u.initials === "EC");
+          if (founder) {
+            await ctx.db.insert("suggestions", {
+              threadId: thread._id,
+              type: "New lead",
+              trigger: "conversation",
+              proposal: `Create lead from new chat: ${chat.displayName}`,
+              rationale: "New conversation on the business line from a number the CRM doesn't know yet.",
+              sourceSnippet: chat.messages[0]?.text,
+              assignedTo: founder._id,
+              status: "pending",
+            });
+          }
+        }
       }
       if (!thread) continue;
 
@@ -230,17 +247,17 @@ export const ingest = internalMutation({
   },
 });
 
-/** Tracked-chats list for Settings → Data & consent (linked and unlinked). */
+/** Chat list for the Inbox section and Settings → Data & consent. */
 export const listThreads = query({
   args: {},
   handler: async (ctx) => {
     const threads = await ctx.db.query("threads").collect();
-    return Promise.all(
+    const rows = await Promise.all(
       threads.map(async (t) => {
         const school = t.schoolId ? await ctx.db.get(t.schoolId) : null;
-        const count = (
-          await ctx.db.query("messages").withIndex("by_thread", (q) => q.eq("threadId", t._id)).collect()
-        ).length;
+        const messages = await ctx.db
+          .query("messages").withIndex("by_thread", (q) => q.eq("threadId", t._id)).collect();
+        const last = messages[messages.length - 1];
         return {
           _id: t._id,
           name: school?.name ?? t.displayName ?? t.phone ?? "Unknown chat",
@@ -248,9 +265,39 @@ export const listThreads = query({
           schoolId: t.schoolId,
           phone: t.phone,
           following: t.following,
-          messageCount: count,
+          messageCount: messages.length,
+          lastMessage: last ? `${last.direction === "out" ? "You: " : ""}${last.text}` : "No messages yet",
+          lastAt: last?._creationTime ?? t.lastSyncAt,
         };
       })
     );
+    return rows.sort((a, b) => b.lastAt - a.lastAt);
+  },
+});
+
+/** One conversation for the Inbox reading pane — read-only, always. */
+export const getThread = query({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, args) => {
+    const thread = await ctx.db.get(args.threadId);
+    if (!thread) return null;
+    const school = thread.schoolId ? await ctx.db.get(thread.schoolId) : null;
+    const messages = await ctx.db
+      .query("messages").withIndex("by_thread", (q) => q.eq("threadId", args.threadId)).collect();
+    const pendingLead = (
+      await ctx.db.query("suggestions").withIndex("by_status", (q) => q.eq("status", "pending")).collect()
+    ).find((s) => s.threadId === args.threadId && s.type === "New lead");
+    return {
+      thread: {
+        _id: thread._id,
+        name: school?.name ?? thread.displayName ?? thread.phone ?? "Unknown chat",
+        phone: thread.phone,
+        following: thread.following,
+        linked: school !== null,
+        schoolId: thread.schoolId,
+      },
+      messages: messages.map((m) => ({ dir: m.direction, text: m.text, time: m.sentAtLabel })),
+      pendingLeadSuggestionId: pendingLead?._id ?? null,
+    };
   },
 });

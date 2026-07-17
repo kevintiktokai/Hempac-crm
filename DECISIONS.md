@@ -89,3 +89,12 @@ clickable prototype (the UI contract) first; backend wiring follows in Phase B.
 | 45 | Threads may be school-less (`schoolId` optional): chats from unknown numbers ingest as "not linked to a school" and appear in Data & consent with a `new chat` chip. Linking/promoting them to schools lands with the engine sprint. | Inbox-wide tracking necessarily ingests numbers the CRM doesn't know yet. |
 | 46 | Sync runs on a 10-minute cron, hard-capped (30 messages/sweep), idempotent via `waMessageId`; Settings shows mode, last sync, cadence, cap, last-sweep result, and a manual "Sync now". | Addendum §10 throttling as a hard requirement; read-only by construction — no send/react/typing code path exists. |
 | 47 | Reseeding resets `syncState` so the stub waves replay from the start. | The dev cron fires on deploy; without the reset a reseed desynced the wave counter (found in verification). |
+
+## Phase B — Inbox, Leads & Tasks sections (client decisions, Jul 2026)
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 48 | **Inbox section** (new nav item): two-pane chat browser over every business-line conversation — list with last-message preview and linked/excluded/new chips, read-only thread pane, per-chat Tracking/Excluded toggle, and lead actions. | Kev: "an inbox sort of section… click through and see the chats coming through and see which ones to track." |
+| 49 | **Lead extraction on a gate**: when the sync ingests a chat from an unknown number it raises a "New lead" suggestion (Review Queue + rail). Accepting — or clicking Create lead in the Inbox — creates the school + an Enquiry deal, links the thread, and audit-logs it. Nothing is created without a human yes. | Kev: "automatically extract leads from the WhatsApp inbox on some accept-or-deny sort of gate." |
+| 50 | **Leads**: the Schools directory is retitled "Leads" in the nav and gains a manual "Add lead" dialog (name, region, phone, pipeline, assignee → school + Enquiry deal, audit-logged). | Kev: "a leads section where we can see the leads in our system… add leads." |
+| 51 | **Tasks section** (new nav item): full task log with All/Mine/Pending/Done filters, kind chips, reminders, and a "this already happened" mode that logs completed activities ("made a call", "went to the conference") straight to done — feeding Reports, where per-rep tasks-done now break down into calls/meetings/follow-ups. | Kev: "a task section… log tasks like 'made a call to this lead'… that'll also feed back into the reports." |

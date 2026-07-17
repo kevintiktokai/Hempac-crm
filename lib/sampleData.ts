@@ -335,7 +335,7 @@ export const FUNNEL = [
 
 /* ---------------- suggestions (§7: dual trigger, Gate 2) ---------------- */
 
-export type SuggestionType = "Stage change" | "Task done" | "New task" | "Follow-up";
+export type SuggestionType = "Stage change" | "Task done" | "New task" | "Follow-up" | "New lead";
 export type SuggestionTrigger = "conversation" | "time_in_pipeline";
 
 export interface Suggestion {
