@@ -27,7 +27,7 @@ export function FollowToggle({ schoolId, following }: { schoolId: Id<"schools">;
         {following ? "Following" : "Not following"}
       </button>
       <p className="ml-auto mt-1.5 max-w-60 text-[11px] leading-snug text-faint">
-        When on, the assistant reads this conversation and suggests updates.
+        All business-line chats are tracked by default. Turn off to exclude this conversation — its messages are never stored.
       </p>
     </div>
   );
