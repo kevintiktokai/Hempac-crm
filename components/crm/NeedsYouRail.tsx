@@ -12,6 +12,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENT_USER } from "@/lib/sampleData";
 import { SuggestionCard } from "./SuggestionCard";
+import { NewTaskDialog } from "./NewTaskDialog";
 import { useActivity, useCrmActions, usePendingSuggestions, useTasks } from "./data";
 import { cn } from "@/lib/utils";
 
@@ -70,7 +71,10 @@ export function NeedsYouRail() {
       )}
 
       <div className="mb-2 mt-6 flex items-center justify-between">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-faint">Tasks</span>
+        <span className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-faint">Tasks</span>
+          <NewTaskDialog />
+        </span>
         <div className="flex gap-0.5">
           {(["all", "mine", "pending"] as const).map((v) => (
             <button
@@ -110,7 +114,9 @@ export function NeedsYouRail() {
             </div>
             <span className={cn(
               "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
-              task.dueLabel === "Today" ? "bg-terra/10 text-terra" : task.done ? "bg-line text-faint" : "bg-faint/15 text-muted"
+              task.overdue ? "bg-danger/10 text-danger"
+                : task.dueLabel === "Today" ? "bg-terra/10 text-terra"
+                : task.done ? "bg-line text-faint" : "bg-faint/15 text-muted"
             )}>
               {task.dueLabel}
             </span>

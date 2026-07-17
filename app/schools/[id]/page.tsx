@@ -12,6 +12,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Avatar, FitBar, dealTone, productTone } from "@/components/crm/bits";
 import { FollowToggle } from "@/components/crm/FollowToggle";
+import { NewTaskDialog } from "@/components/crm/NewTaskDialog";
 import { SuggestionCard } from "@/components/crm/SuggestionCard";
 import { WhatsAppThread, ReadOnlyBadge } from "@/components/crm/WhatsAppThread";
 import { PageState, EmptyState, LoadingSkeleton } from "@/components/crm/PageState";
@@ -201,7 +202,7 @@ export default function SchoolPage({ params }: { params: { id: string } }) {
             </Card>
 
             <Card>
-              <CardTitle>Tasks</CardTitle>
+              <CardTitle right={<NewTaskDialog presetSchoolId={school._id} />}>Tasks</CardTitle>
               {tasks.length > 0 ? (
                 <ul className="space-y-2.5">
                   {tasks.map((task) => (

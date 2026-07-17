@@ -69,3 +69,13 @@ clickable prototype (the UI contract) first; backend wiring follows in Phase B.
 | 35 | The rail's activity feed now renders the audit trail (accepted/dismissed/moved), so team actions are visible live. | Addendum §3's accountability story, for free from the audit table. |
 | 36 | The sandbox's headless browser cannot reach convex.cloud (egress resets it; curl/CLI work). Verification ran through a local relay (scratchpad only, not committed) forwarding HTTP+WebSocket to Convex; a test build pointed NEXT_PUBLIC_CONVEX_URL at it. Real browsers connect directly — this limitation is environment-only. | End-to-end proof: accept → stage applied + audit + survives hard reload; drag persists; follow persists. |
 | 37 | Demos list, engine funnel counts, leads-this-month and demos-booked KPIs remain sample figures. | They belong to the meetings module (Sprint 1b) and the engine (Sprint 4). |
+
+## Phase B — Sprint 1b (tasks, reminders & notifications)
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 38 | Tasks carry real `dueAt`/`remindAt` timestamps; due labels (Overdue/Today/Tomorrow/date) compute server-side at read time. Legacy label fields stay optional in the schema until old dev rows age out. | Addendum §5; schema pushes validate existing documents, so the migration is additive. |
+| 39 | Reminders are a Convex cron (15-min sweep): open tasks whose `remindAt` passed raise an in-app notification for the assignee; `remindedAt` keeps it idempotent. The topbar bell shows unread count and marks read on open. | "Fire ahead of due time" with real infrastructure; push/email channels are a later add-on once the client chooses channels. |
+| 40 | One reminder per task in v1 (addendum says `remindAt[]`); the dialog offers none / 1h / 1d before. | Covers both meeting patterns the client named; the array shape can come later without a breaking change. |
+| 41 | Task creation is a dialog (title, optional school, kind, assignee, quick-pick due, reminder), reachable from the rail and any school page, and audit-logged ("Task logged: … (assigned X)"). | §5 "any user can log a task against a lead/deal or standalone". |
+| 42 | Pipeline gains a rep filter (avatar chips) in global view, alongside Global/Assigned-to-me. | §4 "filter also by … rep". |

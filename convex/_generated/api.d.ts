@@ -10,6 +10,8 @@
 
 import type * as actions from "../actions.js";
 import type * as crm from "../crm.js";
+import type * as crons from "../crons.js";
+import type * as notify from "../notify.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -21,6 +23,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
   crm: typeof crm;
+  crons: typeof crons;
+  notify: typeof notify;
   seed: typeof seed;
 }>;
 

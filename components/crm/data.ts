@@ -8,7 +8,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { CURRENT_USER, type DealStage, type PipelineType } from "@/lib/sampleData";
+import { CURRENT_USER, type DealStage, type PipelineType, type TaskKind } from "@/lib/sampleData";
 
 export const useDashboard = () => useQuery(api.crm.dashboard);
 export const useSchools = () => useQuery(api.crm.listSchools);
@@ -20,6 +20,8 @@ export const useActivity = () => useQuery(api.crm.recentActivity);
 export const useUsers = () => useQuery(api.crm.listUsers);
 export const useEngineSettings = () => useQuery(api.crm.engineSettings);
 export const useReports = () => useQuery(api.crm.reports);
+export const useNotifications = () =>
+  useQuery(api.notify.myNotifications, { initials: CURRENT_USER.initials });
 
 export type EnrichedSuggestion = NonNullable<ReturnType<typeof usePendingSuggestions>>[number];
 export type EnrichedTask = NonNullable<ReturnType<typeof useTasks>>[number];
@@ -32,6 +34,8 @@ export function useCrmActions() {
   const move = useMutation(api.actions.moveDeal);
   const task = useMutation(api.actions.toggleTask);
   const follow = useMutation(api.actions.toggleFollow);
+  const create = useMutation(api.actions.createTask);
+  const readAll = useMutation(api.notify.markAllRead);
   const me = CURRENT_USER.initials;
   return {
     acceptSuggestion: (suggestionId: Id<"suggestions">) =>
@@ -42,5 +46,10 @@ export function useCrmActions() {
       move({ dealId, stage, actorInitials: me }),
     toggleTask: (taskId: Id<"tasks">) => task({ taskId, actorInitials: me }),
     toggleFollow: (schoolId: Id<"schools">) => follow({ schoolId }),
+    createTask: (args: {
+      title: string; kind: TaskKind; schoolId?: Id<"schools">;
+      assigneeInitials: string; dueAt: number; remindAt?: number;
+    }) => create({ ...args, actorInitials: me }),
+    markNotificationsRead: () => readAll({ initials: me }),
   };
 }

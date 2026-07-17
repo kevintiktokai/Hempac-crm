@@ -8,7 +8,8 @@ import { useState } from "react";
 import { Columns3, Presentation, Volleyball } from "lucide-react";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { PageState, EmptyState } from "@/components/crm/PageState";
-import { useBoard } from "@/components/crm/data";
+import { Avatar } from "@/components/crm/bits";
+import { useBoard, useUsers } from "@/components/crm/data";
 import { usePrototype } from "@/components/crm/store";
 import { money, type PipelineType } from "@/lib/sampleData";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 export default function PipelinePage() {
   const { view, setView } = usePrototype();
   const [pipeline, setPipeline] = useState<PipelineType>("boards");
+  const [repFilter, setRepFilter] = useState<string | null>(null);
+  const users = useUsers();
   const data = useBoard(pipeline);
 
   const open = data?.deals.filter((d) => d.stage !== "Won" && d.stage !== "Lost") ?? [];
@@ -75,7 +78,7 @@ export default function PipelinePage() {
               ).map(([key, label]) => (
                 <button
                   key={key}
-                  onClick={() => setView(key)}
+                  onClick={() => { setView(key); if (key === "mine") setRepFilter(null); }}
                   className={cn(
                     "rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-150",
                     view === key ? "bg-green text-white" : "text-muted hover:text-body"
@@ -85,6 +88,33 @@ export default function PipelinePage() {
                 </button>
               ))}
             </div>
+            {/* Rep filter (§4) — global view only */}
+            {view === "global" && (
+              <div className="flex items-center gap-1 rounded-lg border border-line bg-card p-1">
+                <button
+                  onClick={() => setRepFilter(null)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-[11px] font-semibold transition-colors",
+                    repFilter === null ? "bg-ink text-white" : "text-muted hover:text-body"
+                  )}
+                >
+                  All reps
+                </button>
+                {(users ?? []).map((u) => (
+                  <button
+                    key={u._id}
+                    onClick={() => setRepFilter(repFilter === u.initials ? null : u.initials)}
+                    title={u.name}
+                    className={cn(
+                      "rounded-full transition-opacity",
+                      repFilter && repFilter !== u.initials ? "opacity-35" : "opacity-100"
+                    )}
+                  >
+                    <Avatar initials={u.initials} tone={u.role === "admin" ? "terra" : "green"} size="sm" />
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="ml-2 flex gap-5 text-right">
               <div>
                 <div className="text-lg font-semibold tabular-nums text-body">{money(openValue)}</div>
@@ -97,7 +127,7 @@ export default function PipelinePage() {
             </div>
           </div>
         </div>
-        <KanbanBoard pipeline={pipeline} />
+        <KanbanBoard pipeline={pipeline} repFilter={repFilter} />
       </div>
     </PageState>
   );

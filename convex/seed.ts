@@ -14,8 +14,8 @@ export const run = mutation({
   handler: async (ctx) => {
     // wipe (dev-only convenience; tables are small)
     for (const table of [
-      "messages", "threads", "audit", "suggestions", "tasks", "orders",
-      "quotes", "deals", "contacts", "schools", "users", "engine",
+      "notifications", "messages", "threads", "audit", "suggestions", "tasks",
+      "orders", "quotes", "deals", "contacts", "schools", "users", "engine",
     ] as const) {
       const rows = await ctx.db.query(table).collect();
       await Promise.all(rows.map((r) => ctx.db.delete(r._id)));
@@ -94,11 +94,23 @@ export const run = mutation({
       });
     }
 
+    // Real due timestamps (Sprint 1b): map the dataset's labels to offsets
+    // from seed time. tk-1's day-before reminder lands in the past so the
+    // reminder cron fires a demo notification on its first sweep.
+    const HOURS: Record<string, number> = { Today: 4, Tomorrow: 26, Wed: 3 * 24, Thu: 4 * 24, Fri: 5 * 24 };
+    const now = Date.now();
     for (const t of TASKS) {
+      const dueAt = t.done ? now - 2 * 24 * 3600 * 1000 : now + (HOURS[t.due] ?? 3 * 24) * 3600 * 1000;
+      const remindAt =
+        !t.done && t.remind
+          ? dueAt - (t.remind === "1d before" ? 24 : 1) * 3600 * 1000
+          : undefined;
       await ctx.db.insert("tasks", {
         schoolId: t.schoolId === null ? undefined : sid(t.schoolId),
-        title: t.title, kind: t.kind, dueLabel: t.due, remindLabel: t.remind,
+        title: t.title, kind: t.kind, dueAt, remindAt,
         assignedTo: uid(t.assignedTo), status: t.done ? "done" : "open",
+        completedBy: t.done ? uid(t.assignedTo) : undefined,
+        completedAt: t.done ? now - 24 * 3600 * 1000 : undefined,
       });
     }
 

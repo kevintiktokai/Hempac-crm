@@ -16,7 +16,7 @@ import {
 import { CURRENT_USER } from "@/lib/sampleData";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { usePrototype } from "./store";
-import { usePendingSuggestions } from "./data";
+import { useCrmActions, useNotifications, usePendingSuggestions } from "./data";
 import { AskDrawer } from "./AskDrawer";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +105,41 @@ function Sidebar() {
   );
 }
 
+/** Reminder notifications (addendum §5) — raised by the reminder cron. */
+function NotificationsBell() {
+  const data = useNotifications();
+  const { markNotificationsRead } = useCrmActions();
+  const unread = data?.unread ?? 0;
+  return (
+    <Popover onOpenChange={(open) => { if (open && unread > 0) void markNotificationsRead(); }}>
+      <PopoverTrigger asChild>
+        <button className="relative rounded-lg border border-line bg-card p-2 transition-colors hover:border-faint" aria-label={`Notifications${unread ? ` (${unread} unread)` : ""}`}>
+          <Bell size={16} className="text-muted" />
+          {unread > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-terra px-1 text-[9px] font-bold text-white">
+              {unread}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 !p-0">
+        <div className="border-b border-line px-4 py-3 text-sm font-semibold text-body">Notifications</div>
+        {data === undefined || data.items.length === 0 ? (
+          <p className="px-4 py-5 text-xs text-muted">No reminders yet — they fire ahead of task due times.</p>
+        ) : (
+          <ul className="max-h-72 divide-y divide-line overflow-y-auto">
+            {data.items.map((n) => (
+              <li key={n._id} className={cn("px-4 py-2.5 text-xs leading-snug", n.read ? "text-muted" : "font-medium text-body")}>
+                {n.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function Topbar() {
   const { setAskOpen, askOpen } = usePrototype();
 
@@ -134,10 +169,7 @@ function Topbar() {
           <Sparkles size={15} /> Ask
           <kbd className="ml-0.5 rounded border border-terra/30 px-1 text-[10px] text-terra/70">⌘J</kbd>
         </button>
-        <button className="relative rounded-lg border border-line bg-card p-2 transition-colors hover:border-faint" aria-label="Notifications">
-          <Bell size={16} className="text-muted" />
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-terra" />
-        </button>
+        <NotificationsBell />
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-green text-xs font-semibold text-white">
           {CURRENT_USER.initials}
         </span>

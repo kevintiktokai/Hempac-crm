@@ -42,15 +42,35 @@ function enrichSuggestion(
 }
 export type EnrichedSuggestion = ReturnType<typeof enrichSuggestion>;
 
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Human due label from the real timestamp (Sprint 1b). */
+function dueLabelOf(t: Doc<"tasks">): { label: string; overdue: boolean } {
+  if (t.status === "done") return { label: "Done", overdue: false };
+  if (t.dueAt === undefined) return { label: t.dueLabel ?? "This week", overdue: false };
+  const startOfDay = (ms: number) => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  const diffDays = Math.round((startOfDay(t.dueAt) - startOfDay(Date.now())) / 86400000);
+  if (diffDays < 0) return { label: "Overdue", overdue: true };
+  if (diffDays === 0) return { label: "Today", overdue: false };
+  if (diffDays === 1) return { label: "Tomorrow", overdue: false };
+  const d = new Date(t.dueAt);
+  return { label: `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`, overdue: false };
+}
+
 function enrichTask(s: Doc<"tasks">, school: Doc<"schools"> | null, assignee: Doc<"users"> | undefined) {
+  const due = dueLabelOf(s);
+  const remindGap = s.remindAt !== undefined && s.dueAt !== undefined ? s.dueAt - s.remindAt : undefined;
   return {
     _id: s._id,
     schoolId: s.schoolId,
     schoolName: school?.name,
     title: s.title,
     kind: s.kind,
-    dueLabel: s.dueLabel,
-    remindLabel: s.remindLabel,
+    dueLabel: due.label,
+    overdue: due.overdue,
+    remindLabel:
+      remindGap === undefined ? s.remindLabel : remindGap >= 20 * 3600 * 1000 ? "1d before" : "1h before",
     assigneeInitials: assignee?.initials ?? "?",
     done: s.status === "done",
   };

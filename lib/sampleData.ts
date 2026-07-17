@@ -443,7 +443,7 @@ export interface Task {
 }
 
 export const TASKS: Task[] = [
-  { id: "tk-1", schoolId: 1, title: "Follow up on Greendale finance-committee decision", kind: "followup", due: "Today", remind: "1h before", assignedTo: "u-ec", done: false },
+  { id: "tk-1", schoolId: 1, title: "Follow up on Greendale finance-committee decision", kind: "followup", due: "Today", remind: "1d before", assignedTo: "u-ec", done: false },
   { id: "tk-2", schoolId: 2, title: "Confirm Northgate install + training dates", kind: "meeting", due: "Tomorrow", remind: "1d before", assignedTo: "u-ec", done: false },
   { id: "tk-3", schoolId: 3, title: "Send Highfield quote — 8 units, two labs", kind: "followup", due: "Wed", remind: "1d before", assignedTo: "u-tc", done: false },
   { id: "tk-4", schoolId: 5, title: "Quote Eastvale equipment refresh", kind: "followup", due: "Thu", assignedTo: "u-ec", done: false },
