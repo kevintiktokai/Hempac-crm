@@ -1,22 +1,29 @@
 "use client";
 
 /**
- * Settings (§4.7): users & roles, engine defaults, WhatsApp MCP connection
- * (read-only badge + last sync), data & consent (followed list, un-follow,
- * delete-school-data).
+ * Settings (§4.7 + addendum §6), live from Convex: users & roles (shared
+ * visibility), engine defaults from the settings singleton, WhatsApp
+ * connection status, data & consent (followed list with live unfollow).
  */
 import { MessageCircle, ShieldCheck, Trash2, Users, Settings as SettingsIcon } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/crm/bits";
-import { PageState, EmptyState } from "@/components/crm/PageState";
-import { usePrototype } from "@/components/crm/store";
-import { SCHOOLS, USERS } from "@/lib/sampleData";
+import { PageState, EmptyState, LoadingSkeleton } from "@/components/crm/PageState";
+import { useCrmActions, useEngineSettings, useSchools, useUsers } from "@/components/crm/data";
 
 export default function SettingsPage() {
-  const { following, toggleFollow } = usePrototype();
-  const followed = SCHOOLS.filter((s) => following[s.id]);
+  const users = useUsers();
+  const schools = useSchools();
+  const engine = useEngineSettings();
+  const { toggleFollow } = useCrmActions();
+
+  if (users === undefined || schools === undefined || engine === undefined) {
+    return <LoadingSkeleton variant="table" />;
+  }
+
+  const followed = schools.filter((s) => s.following);
 
   return (
     <PageState
@@ -34,17 +41,19 @@ export default function SettingsPage() {
         <h1 className="mb-5 text-xl font-semibold text-ink">Settings</h1>
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
-            <CardTitle right={<span className="text-xs tabular-nums text-muted">{USERS.length} of 10 seats</span>}>
+            <CardTitle right={<span className="text-xs tabular-nums text-muted">{users.length} of 10 seats</span>}>
               <span className="flex items-center gap-2"><Users size={14} /> Users &amp; roles</span>
             </CardTitle>
             <ul className="divide-y divide-line">
-              {USERS.map((u) => (
-                <li key={u.id} className="flex items-center justify-between py-3">
+              {users.map((u) => (
+                <li key={u._id} className="flex items-center justify-between py-3">
                   <div className="flex items-center gap-2.5">
                     <Avatar initials={u.initials} tone={u.role === "admin" ? "terra" : "green"} />
                     <div>
                       <div className="text-sm font-medium text-body">{u.name}</div>
-                      <div className="text-xs text-muted">{u.id === "u-ec" ? "Founder & CEO" : u.role === "admin" ? "Admin" : "Sales rep"}</div>
+                      <div className="text-xs text-muted">
+                        {u.initials === "EC" ? "Founder & CEO" : u.role === "admin" ? "Admin" : "Sales rep"}
+                      </div>
                     </div>
                   </div>
                   <Chip tone={u.role === "admin" ? "terra" : "neutral"}>{u.role}</Chip>
@@ -64,16 +73,16 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted">Segments</span>
                 <div className="flex flex-wrap justify-end gap-1.5">
-                  {["Private", "Trust", "Mission"].map((s) => <Chip key={s} tone="green">{s}</Chip>)}
+                  {(engine?.segments ?? []).map((s) => <Chip key={s} tone="green">{s}</Chip>)}
                 </div>
               </div>
               <div className="flex items-center justify-between gap-4">
                 <span className="text-muted">Regions</span>
-                <span className="text-right text-xs text-body">Harare · Bulawayo · Mutare · Gweru</span>
+                <span className="text-right text-xs text-body">{(engine?.regions ?? []).join(" · ")}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Throughput cap</span>
-                <span className="text-xs font-semibold tabular-nums text-body">10 drafts / day</span>
+                <span className="text-xs font-semibold tabular-nums text-body">{engine?.throughputCap ?? 10} drafts / day</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted">Currency · phone format</span>
@@ -110,11 +119,11 @@ export default function SettingsPage() {
             {followed.length > 0 ? (
               <ul className="divide-y divide-line">
                 {followed.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between py-2.5">
+                  <li key={s._id} className="flex items-center justify-between py-2.5">
                     <span className="text-sm text-body">{s.name}</span>
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => toggleFollow(s.id)}
+                        onClick={() => toggleFollow(s._id)}
                         className="text-xs font-medium text-muted underline-offset-2 transition-colors hover:text-body hover:underline"
                       >
                         Unfollow

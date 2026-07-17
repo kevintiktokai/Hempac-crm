@@ -1,61 +1,39 @@
 "use client";
 
 /**
- * Reports & leaderboard (addendum §9): per-rep and global performance —
- * quotations sent vs converted (volume AND value), follow-up rate, tasks
- * completed — plus the "what we've sold" record by size and period (§2).
+ * Reports & leaderboard (addendum §9), live from Convex: per-rep and
+ * global quotations sent vs converted (volume AND value), follow-up rate,
+ * tasks completed, boards-sold record, ranked leaderboard.
  */
 import { useState } from "react";
 import { Trophy, Medal } from "lucide-react";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Avatar, SegmentBar } from "@/components/crm/bits";
-import { PageState, EmptyState } from "@/components/crm/PageState";
-import { ORDERS, QUOTES, USERS, BOARD_SIZES, money } from "@/lib/sampleData";
+import { PageState, EmptyState, LoadingSkeleton } from "@/components/crm/PageState";
+import { useReports } from "@/components/crm/data";
+import { money } from "@/lib/sampleData";
 import { cn } from "@/lib/utils";
 
 const PERIODS = ["This month", "This quarter", "This year"] as const;
 
-/** Follow-up rate is fabricated sample data until Phase B computes it from task history. */
-const FOLLOWUP_RATE: Record<string, number> = { "u-ec": 86, "u-gb": 91, "u-tc": 74, "u-rk": 63 };
-const TASKS_DONE: Record<string, number> = { "u-ec": 14, "u-gb": 11, "u-tc": 9, "u-rk": 5 };
-
 export default function ReportsPage() {
+  const data = useReports();
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>("This quarter");
 
-  const repRows = USERS.map((u) => {
-    const sent = QUOTES.filter((q) => q.ownerId === u.id);
-    const won = sent.filter((q) => q.status === "won");
-    const soldValue = ORDERS.filter((o) => o.ownerId === u.id).reduce((a, o) => a + o.value, 0);
-    return {
-      user: u,
-      sent: sent.length,
-      sentValue: sent.reduce((a, q) => a + q.value, 0),
-      won: won.length,
-      wonValue: won.reduce((a, q) => a + q.value, 0),
-      soldValue,
-      followUp: FOLLOWUP_RATE[u.id] ?? 0,
-      tasksDone: TASKS_DONE[u.id] ?? 0,
-    };
-  }).sort((a, b) => b.soldValue - a.soldValue);
+  if (data === undefined) return <LoadingSkeleton variant="table" />;
 
+  const { rows, boardsBySize } = data;
   const totals = {
-    sent: repRows.reduce((a, r) => a + r.sent, 0),
-    sentValue: repRows.reduce((a, r) => a + r.sentValue, 0),
-    won: repRows.reduce((a, r) => a + r.won, 0),
-    wonValue: repRows.reduce((a, r) => a + r.wonValue, 0),
+    sent: rows.reduce((a, r) => a + r.sent, 0),
+    sentValue: rows.reduce((a, r) => a + r.sentValue, 0),
+    won: rows.reduce((a, r) => a + r.won, 0),
+    wonValue: rows.reduce((a, r) => a + r.wonValue, 0),
   };
-  const hitVolume = Math.round((totals.won / totals.sent) * 100);
-  const hitValue = Math.round((totals.wonValue / totals.sentValue) * 100);
-
-  const boardsOrders = ORDERS.filter((o) => o.product === "Smart Boards");
-  const boardsBySize = BOARD_SIZES.map((size) => ({
-    size,
-    units: boardsOrders.filter((o) => o.boardSize === size).reduce((a, o) => a + o.units, 0),
-    value: boardsOrders.filter((o) => o.boardSize === size).reduce((a, o) => a + o.value, 0),
-  }));
+  const hitVolume = Math.round((totals.won / Math.max(totals.sent, 1)) * 100);
+  const hitValue = Math.round((totals.wonValue / Math.max(totals.sentValue, 1)) * 100);
   const boardsTotal = boardsBySize.reduce((a, b) => a + b.units, 0);
-  const maxUnits = Math.max(...boardsBySize.map((b) => b.units));
+  const maxUnits = Math.max(...boardsBySize.map((b) => b.units), 1);
 
   return (
     <PageState
@@ -92,7 +70,6 @@ export default function ReportsPage() {
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
-          {/* Global: quotations sent vs converted */}
           <Card>
             <CardTitle>Quotations — sent vs converted</CardTitle>
             <div className="grid grid-cols-2 gap-4">
@@ -106,24 +83,21 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="mt-4 space-y-3">
-              <div>
-                <div className="mb-1 flex justify-between text-[11px]">
-                  <span className="text-muted">Hit rate by volume</span>
-                  <span className="font-semibold tabular-nums text-body">{hitVolume}%</span>
+              {([
+                ["Hit rate by volume", hitVolume],
+                ["Hit rate by value", hitValue],
+              ] as const).map(([label, pct]) => (
+                <div key={label}>
+                  <div className="mb-1 flex justify-between text-[11px]">
+                    <span className="text-muted">{label}</span>
+                    <span className="font-semibold tabular-nums text-body">{pct}%</span>
+                  </div>
+                  <SegmentBar filled={Math.round(pct / 10)} total={10} />
                 </div>
-                <SegmentBar filled={Math.round(hitVolume / 10)} total={10} />
-              </div>
-              <div>
-                <div className="mb-1 flex justify-between text-[11px]">
-                  <span className="text-muted">Hit rate by value</span>
-                  <span className="font-semibold tabular-nums text-body">{hitValue}%</span>
-                </div>
-                <SegmentBar filled={Math.round(hitValue / 10)} total={10} />
-              </div>
+              ))}
             </div>
           </Card>
 
-          {/* Boards sold — by size */}
           <Card>
             <CardTitle right={<span className="text-xs text-muted">{period.toLowerCase()}</span>}>
               Boards sold
@@ -148,21 +122,20 @@ export default function ReportsPage() {
             <p className="mt-3 text-[11px] text-faint">Cumulative sold record — every won order, by size and period.</p>
           </Card>
 
-          {/* Leaderboard */}
           <Card>
             <CardTitle right={<Trophy size={14} className="text-gold" />}>Leaderboard</CardTitle>
             <ul className="space-y-3">
-              {repRows.map((r, i) => (
-                <li key={r.user.id} className="flex items-center gap-3">
+              {rows.map((r, i) => (
+                <li key={r.userId} className="flex items-center gap-3">
                   <span className={cn(
                     "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
                     i === 0 ? "bg-gold/15 text-gold" : "bg-line text-muted"
                   )}>
                     {i === 0 ? <Medal size={13} /> : i + 1}
                   </span>
-                  <Avatar initials={r.user.initials} tone={r.user.role === "admin" ? "terra" : "green"} size="sm" />
+                  <Avatar initials={r.initials} tone={r.role === "admin" ? "terra" : "green"} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-body">{r.user.name}</div>
+                    <div className="truncate text-sm font-medium text-body">{r.name}</div>
                     <div className="text-[10px] text-faint">{r.won}/{r.sent} quotes converted</div>
                   </div>
                   <span className="text-sm font-semibold tabular-nums text-body">{money(r.soldValue)}</span>
@@ -172,7 +145,6 @@ export default function ReportsPage() {
           </Card>
         </div>
 
-        {/* Per-rep detail table */}
         <Card className="mt-5 !p-0">
           <div className="border-b border-line px-5 py-4">
             <h3 className="text-sm font-semibold text-body">Individual performance</h3>
@@ -184,13 +156,13 @@ export default function ReportsPage() {
             <div className="col-span-3 md:pl-6">Follow-up rate</div>
             <div className="col-span-2 text-right">Tasks done</div>
           </div>
-          {repRows.map((r) => (
-            <div key={r.user.id} className="grid grid-cols-2 items-center gap-y-2 border-b border-line px-5 py-3.5 last:border-b-0 md:grid-cols-12">
+          {rows.map((r) => (
+            <div key={r.userId} className="grid grid-cols-2 items-center gap-y-2 border-b border-line px-5 py-3.5 last:border-b-0 md:grid-cols-12">
               <div className="col-span-2 flex items-center gap-2.5 md:col-span-3">
-                <Avatar initials={r.user.initials} tone={r.user.role === "admin" ? "terra" : "green"} size="sm" />
+                <Avatar initials={r.initials} tone={r.role === "admin" ? "terra" : "green"} size="sm" />
                 <div>
-                  <span className="text-sm font-medium text-body">{r.user.name}</span>
-                  {r.user.role === "admin" && <Chip tone="terra" className="ml-2">admin</Chip>}
+                  <span className="text-sm font-medium text-body">{r.name}</span>
+                  {r.role === "admin" && <Chip tone="terra" className="ml-2">admin</Chip>}
                 </div>
               </div>
               <div className="text-right text-sm tabular-nums text-body md:col-span-2">

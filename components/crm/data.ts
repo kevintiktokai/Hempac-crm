@@ -1,0 +1,46 @@
+"use client";
+
+/**
+ * Sprint 1 client data layer: live Convex queries/mutations behind small
+ * hooks. `undefined` means loading — screens render their skeletons.
+ * The acting user is Emilia until the auth sprint.
+ */
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { CURRENT_USER, type DealStage, type PipelineType } from "@/lib/sampleData";
+
+export const useDashboard = () => useQuery(api.crm.dashboard);
+export const useSchools = () => useQuery(api.crm.listSchools);
+export const useSchool = (schoolId: Id<"schools">) => useQuery(api.crm.getSchool, { schoolId });
+export const useBoard = (pipelineType: PipelineType) => useQuery(api.crm.board, { pipelineType });
+export const usePendingSuggestions = () => useQuery(api.crm.pendingSuggestions);
+export const useTasks = () => useQuery(api.crm.listTasks);
+export const useActivity = () => useQuery(api.crm.recentActivity);
+export const useUsers = () => useQuery(api.crm.listUsers);
+export const useEngineSettings = () => useQuery(api.crm.engineSettings);
+export const useReports = () => useQuery(api.crm.reports);
+
+export type EnrichedSuggestion = NonNullable<ReturnType<typeof usePendingSuggestions>>[number];
+export type EnrichedTask = NonNullable<ReturnType<typeof useTasks>>[number];
+export type BoardData = NonNullable<ReturnType<typeof useBoard>>;
+export type SchoolDetail = NonNullable<NonNullable<ReturnType<typeof useSchool>>>;
+
+export function useCrmActions() {
+  const accept = useMutation(api.actions.acceptSuggestion);
+  const dismiss = useMutation(api.actions.dismissSuggestion);
+  const move = useMutation(api.actions.moveDeal);
+  const task = useMutation(api.actions.toggleTask);
+  const follow = useMutation(api.actions.toggleFollow);
+  const me = CURRENT_USER.initials;
+  return {
+    acceptSuggestion: (suggestionId: Id<"suggestions">) =>
+      accept({ suggestionId, actorInitials: me }),
+    dismissSuggestion: (suggestionId: Id<"suggestions">) =>
+      dismiss({ suggestionId, actorInitials: me }),
+    moveDeal: (dealId: Id<"deals">, stage: DealStage) =>
+      move({ dealId, stage, actorInitials: me }),
+    toggleTask: (taskId: Id<"tasks">) => task({ taskId, actorInitials: me }),
+    toggleFollow: (schoolId: Id<"schools">) => follow({ schoolId }),
+  };
+}

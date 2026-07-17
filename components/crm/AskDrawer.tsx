@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { waLink } from "@/lib/sampleData";
 import { usePrototype } from "./store";
+import { useCrmActions, usePendingSuggestions } from "./data";
 import { cn } from "@/lib/utils";
 
 const HIGHFIELD_DRAFT =
@@ -43,15 +44,20 @@ function StatRow({ rows }: { rows: [string, string][] }) {
   );
 }
 
-/** Inline Gate-2 card inside the chat; Accept routes through the same store as everywhere else. */
+/** Inline Gate-2 card inside the chat; Accept routes through the same Convex mutations as everywhere else. */
 function InlineSuggestion() {
-  const { suggestions, acceptSuggestion, dismissSuggestion } = usePrototype();
-  const s = suggestions.find((x) => x.id === "sg-1");
-  if (!s) return null;
-  if (s.status !== "pending") {
+  const suggestions = usePendingSuggestions();
+  const { acceptSuggestion, dismissSuggestion } = useCrmActions();
+  if (suggestions === undefined) {
+    return <div className="rounded-xl bg-cream px-3 py-2 text-[11px] text-faint">Checking the queue…</div>;
+  }
+  const s = suggestions.find(
+    (x) => x.type === "Stage change" && x.schoolName.startsWith("Greendale")
+  );
+  if (!s) {
     return (
       <div className="rounded-xl border border-line bg-green-soft px-3 py-2 text-[11px] text-green">
-        {s.status === "accepted" ? "Accepted — Greendale moved to Awaiting Funds." : "Dismissed — no change made."}
+        Already handled — that suggestion is no longer pending.
       </div>
     );
   }
@@ -67,8 +73,8 @@ function InlineSuggestion() {
         <span className="text-[10px] italic text-muted">“{s.sourceSnippet}”</span>
       </div>
       <div className="mt-2 flex gap-2">
-        <Button variant="success" size="sm" onClick={() => acceptSuggestion(s.id)}>Accept</Button>
-        <Button variant="ghost" size="sm" onClick={() => dismissSuggestion(s.id)}>Dismiss</Button>
+        <Button variant="success" size="sm" onClick={() => acceptSuggestion(s._id)}>Accept</Button>
+        <Button variant="ghost" size="sm" onClick={() => dismissSuggestion(s._id)}>Dismiss</Button>
       </div>
       <div className="mt-1.5 text-[10px] text-faint">Also mirrored to the Review Queue.</div>
     </div>
