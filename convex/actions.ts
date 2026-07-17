@@ -174,7 +174,11 @@ export const createTask = mutation({
   },
 });
 
-/** Gate 1 — per-conversation tracking opt-in, mirrored onto the thread. */
+/**
+ * Per-conversation tracking control. Inbox-wide tracking is the default
+ * (client sign-off); this excludes/re-includes a school's chat, mirrored
+ * onto its thread so the sync skips excluded chats.
+ */
 export const toggleFollow = mutation({
   args: { schoolId: v.id("schools") },
   handler: async (ctx, args) => {
@@ -185,5 +189,17 @@ export const toggleFollow = mutation({
     const thread = await ctx.db
       .query("threads").withIndex("by_school", (q) => q.eq("schoolId", args.schoolId)).first();
     if (thread) await ctx.db.patch(thread._id, { following });
+  },
+});
+
+/** Thread-level variant for unlinked chats in Settings → Data & consent. */
+export const toggleThreadTracking = mutation({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, args) => {
+    const thread = await ctx.db.get(args.threadId);
+    if (!thread) return;
+    const following = !thread.following;
+    await ctx.db.patch(args.threadId, { following });
+    if (thread.schoolId) await ctx.db.patch(thread.schoolId, { following });
   },
 });

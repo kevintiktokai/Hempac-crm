@@ -14,8 +14,8 @@ export const run = mutation({
   handler: async (ctx) => {
     // wipe (dev-only convenience; tables are small)
     for (const table of [
-      "notifications", "messages", "threads", "audit", "suggestions", "tasks",
-      "orders", "quotes", "deals", "contacts", "schools", "users", "engine",
+      "notifications", "syncState", "messages", "threads", "audit", "suggestions",
+      "tasks", "orders", "quotes", "deals", "contacts", "schools", "users", "engine",
     ] as const) {
       const rows = await ctx.db.query(table).collect();
       await Promise.all(rows.map((r) => ctx.db.delete(r._id)));

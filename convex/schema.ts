@@ -120,20 +120,40 @@ export default defineSchema({
     ownerId: v.id("users"),
   }).index("by_owner", ["ownerId"]),
 
-  // Captured, read-only WhatsApp data (never written back)
+  // Captured, read-only WhatsApp data (never written back).
+  // Sprint 2: inbox-wide tracking (client sign-off) — every business-line
+  // chat gets a thread, tracked by default; `following: false` excludes it.
+  // schoolId is optional: chats from numbers the CRM doesn't know yet stay
+  // unlinked until matched or promoted.
   threads: defineTable({
-    schoolId: v.id("schools"),
+    schoolId: v.optional(v.id("schools")),
     waChatId: v.string(),
+    phone: v.optional(v.string()),
+    displayName: v.optional(v.string()),
     following: v.boolean(),
     lastSyncAt: v.number(),
-  }).index("by_school", ["schoolId"]),
+  })
+    .index("by_school", ["schoolId"])
+    .index("by_waChatId", ["waChatId"]),
 
   messages: defineTable({
     threadId: v.id("threads"),
     direction: v.union(v.literal("in"), v.literal("out")),
     text: v.string(),
     sentAtLabel: v.string(),
-  }).index("by_thread", ["threadId"]),
+    waMessageId: v.optional(v.string()),
+  })
+    .index("by_thread", ["threadId"])
+    .index("by_waMessageId", ["waMessageId"]),
+
+  // Sprint 2: ingestion state singleton — mode, throttle, last result.
+  syncState: defineTable({
+    mode: v.union(v.literal("stub"), v.literal("mcp")),
+    lastSyncAt: v.optional(v.number()),
+    syncCount: v.number(),
+    lastResult: v.optional(v.string()),
+    messagesPerSyncCap: v.number(),
+  }),
 
   tasks: defineTable({
     schoolId: v.optional(v.id("schools")),

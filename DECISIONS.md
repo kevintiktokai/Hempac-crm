@@ -79,3 +79,13 @@ clickable prototype (the UI contract) first; backend wiring follows in Phase B.
 | 40 | One reminder per task in v1 (addendum says `remindAt[]`); the dialog offers none / 1h / 1d before. | Covers both meeting patterns the client named; the array shape can come later without a breaking change. |
 | 41 | Task creation is a dialog (title, optional school, kind, assignee, quick-pick due, reminder), reachable from the rail and any school page, and audit-logged ("Task logged: … (assigned X)"). | §5 "any user can log a task against a lead/deal or standalone". |
 | 42 | Pipeline gains a rep filter (avatar chips) in global view, alongside Global/Assigned-to-me. | §4 "filter also by … rep". |
+
+## Phase B — Sprint 2 (read-only WhatsApp ingestion loop)
+
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 43 | **Tracking scope: whole inbox (client sign-off, Jul 2026).** Every business-line chat is ingested by default; the per-conversation control remains as an exclusion — excluded chats' messages are never stored, enforced at sync time. This supersedes the per-conversation opt-in default; addendum §10's "do not broaden without sign-off" condition is met. | Kev's direction: "have the entire inbox being tracked… we can change it from there." |
+| 44 | Connector abstraction with two modes: `stub` (deterministic simulated inbox — waves of new messages, a new unlinked chat, and an excluded-chat message to prove consent) and `mcp` (activated by `WHATSAPP_MCP_URL` via `npx convex env set`; reports "endpoint mapping pending" until the real endpoint's shape is confirmed rather than guessing it). | The loop is fully demonstrable pre-credentials; plugging in the business line is env-var + one mapping function. |
+| 45 | Threads may be school-less (`schoolId` optional): chats from unknown numbers ingest as "not linked to a school" and appear in Data & consent with a `new chat` chip. Linking/promoting them to schools lands with the engine sprint. | Inbox-wide tracking necessarily ingests numbers the CRM doesn't know yet. |
+| 46 | Sync runs on a 10-minute cron, hard-capped (30 messages/sweep), idempotent via `waMessageId`; Settings shows mode, last sync, cadence, cap, last-sweep result, and a manual "Sync now". | Addendum §10 throttling as a hard requirement; read-only by construction — no send/react/typing code path exists. |
+| 47 | Reseeding resets `syncState` so the stub waves replay from the start. | The dev cron fires on deploy; without the reset a reseed desynced the wave counter (found in verification). |
